@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GherkinSyncTool", "GherkinSyncTool\GherkinSyncTool.csproj", "{1BAC2A9D-ED39-4EA0-9056-229A99067714}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TestRailClient", "TestRailClient", "{36F2CE31-DF3E-43E3-9670-54F54AD3A639}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestRail", "testrail-client\TestRail\TestRail.csproj", "{7AE9953B-AACF-4C32-8A32-D925EC519B79}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestRail.Tests", "testrail-client\TestRail.Tests\TestRail.Tests.csproj", "{93D3C9A7-20A3-4399-ABFB-4E15382233F7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1BAC2A9D-ED39-4EA0-9056-229A99067714}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BAC2A9D-ED39-4EA0-9056-229A99067714}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BAC2A9D-ED39-4EA0-9056-229A99067714}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BAC2A9D-ED39-4EA0-9056-229A99067714}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7AE9953B-AACF-4C32-8A32-D925EC519B79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7AE9953B-AACF-4C32-8A32-D925EC519B79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7AE9953B-AACF-4C32-8A32-D925EC519B79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7AE9953B-AACF-4C32-8A32-D925EC519B79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93D3C9A7-20A3-4399-ABFB-4E15382233F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93D3C9A7-20A3-4399-ABFB-4E15382233F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93D3C9A7-20A3-4399-ABFB-4E15382233F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93D3C9A7-20A3-4399-ABFB-4E15382233F7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7AE9953B-AACF-4C32-8A32-D925EC519B79} = {36F2CE31-DF3E-43E3-9670-54F54AD3A639}
+		{93D3C9A7-20A3-4399-ABFB-4E15382233F7} = {36F2CE31-DF3E-43E3-9670-54F54AD3A639}
+	EndGlobalSection
+EndGlobal

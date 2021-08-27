@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net461;net45</TargetFrameworks>
+    <PackageId>TestRail</PackageId>
+    <Version>3.2.0</Version>
+    <PackageVersion>$(Version)</PackageVersion>
+    <Title>TestRail Client</Title>
+    <Authors>TestRail Client Committers</Authors>
+    <PackageLicenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/zoosk/testrail-client</RepositoryUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Description>.Net Standard 2.0 implementation of the TestRail API</Description>
+    <PackageReleaseNotes>
+    - Fix error on JObject creation in RequestResult
+    </PackageReleaseNotes>
+    <Copyright>Copyright 2017</Copyright>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' Or  '$(TargetFramework)' == 'net45'">
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Http.WebRequest" />
+    <Reference Include="System.Reflection" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Web" />
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+  </ItemGroup>
+
+</Project>
