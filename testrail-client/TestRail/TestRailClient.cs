@@ -791,11 +791,13 @@ namespace TestRail
         /// <param name="projectId">id of the project</param>
         /// <param name="suiteId">id of the suite</param>
         /// <param name="sectionId">(optional) id of the section</param>
+        /// <param name="templateId">(optional) id of the template</param>
         /// <returns>cases associated with the suite</returns>
-        public RequestResult<IList<Case>> GetCases(ulong projectId, ulong suiteId, ulong? sectionId = null)
+        public RequestResult<IList<Case>> GetCases(ulong projectId, ulong suiteId, ulong? sectionId = null, ulong? templateId = null)
         {
             var optionalSectionId = sectionId.HasValue ? $"&section_id={sectionId.Value}" : string.Empty;
-            var options = $"&suite_id={suiteId}{optionalSectionId}";
+            var optionalTemplateId = templateId.HasValue ? $"&template_id={templateId.Value}" : string.Empty;
+            var options = $"&suite_id={suiteId}{optionalSectionId}{optionalTemplateId}";
             var uri = _CreateUri_(CommandType.Get, CommandAction.Cases, projectId, null, options);
 
             return _SendGetCommand<IList<Case>>(uri);

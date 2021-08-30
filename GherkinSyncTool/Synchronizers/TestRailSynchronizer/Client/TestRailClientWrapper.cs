@@ -63,16 +63,16 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
                 Log.Info($"Up-to-date: [{caseId}] {caseToUpdate.Title}");
             }
         }
-
-        public Case GetCase(ulong id)
+        
+        public IList<Case> GetCases()
         {
-            var policy = CreateResultHandlerPolicy<Case>();
-            var testRailCase = policy.Execute(()=>
-                _testRailClient.GetCase(id));
+            var policy = CreateResultHandlerPolicy<IList<Case>>();
+            var cases = policy.Execute(()=>
+                _testRailClient.GetCases(_config.TestRailSettings.ProjectId, _config.TestRailSettings.SuiteId, null, _config.TestRailSettings.TemplateId));
             
-            ValidateRequestResult(testRailCase);
+            ValidateRequestResult(cases);
 
-            return testRailCase.Payload;
+            return cases.Payload;
         }
 
         private void ValidateRequestResult<T>(RequestResult<T> requestResult)
@@ -114,14 +114,6 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
         {
             var policy = CreateResultHandlerPolicy<IList<Section>>();
             var result = policy.Execute(()=>_testRailClient.GetSections(projectId));
-            ValidateRequestResult(result);
-            return result.Payload;
-        }
-
-        public IEnumerable<Case> GetCases(ulong projectId, ulong suiteId)
-        {
-            var policy = CreateResultHandlerPolicy<IList<Case>>();
-            var result = policy.Execute(()=> _testRailClient.GetCases(projectId, suiteId));
             ValidateRequestResult(result);
             return result.Payload;
         }
