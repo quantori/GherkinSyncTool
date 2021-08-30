@@ -23,7 +23,7 @@ namespace GherkinSyncTool.FeatureParser
             var baseDirectory = config.BaseDirectory;
             var gherkinFilePaths = Directory.EnumerateFiles(baseDirectory, "*.feature",
                 SearchOption.AllDirectories);
-            Log.Info($"# Scanning for feature files in {baseDirectory}");
+            Log.Info($"# Scanning for feature files in: {baseDirectory}");
             return _featureParser.Parse(gherkinFilePaths);
         }
     }

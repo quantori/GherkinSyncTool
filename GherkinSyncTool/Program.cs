@@ -27,19 +27,20 @@ namespace GherkinSyncTool
                 var builder = new ContainerBuilder();
                 builder.RegisterModule<GherkinSyncToolModule>();
                 var container = builder.Build();
+                
+                var stopwatch = Stopwatch.StartNew();
                 //Parse files
-                var parseFilesStopwatch = Stopwatch.StartNew();
                 List<IFeatureFile> featureFiles = ParseFeatureFiles(container);
                 if (featureFiles.Count == 0)
                 {
                     Log.Info("No files were found for synchronization");
                     return 0;
                 }
-                Log.Info(@$"{featureFiles.Count} file(s) found in {parseFilesStopwatch.Elapsed:mm\:ss\.fff}");
-
+                
                 //Push to sync target system
                 var synchronizer = container.Resolve<ISynchronizer>();
                 synchronizer.Sync(featureFiles);
+                Log.Info(@$"Synchronization finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
             }
             catch (Exception ex)
             {
@@ -57,8 +58,9 @@ namespace GherkinSyncTool
         private static List<IFeatureFile> ParseFeatureFiles(IContainer container)
         {
             var featureFilesGrabber = container.Resolve<IFeatureFilesGrabber>();
+            var parseFilesStopwatch = Stopwatch.StartNew();
             var featureFiles = featureFilesGrabber.TakeFiles();
-
+            Log.Info(@$"{featureFiles.Count} file(s) found in {parseFilesStopwatch.Elapsed:mm\:ss\.fff}");
             return featureFiles;
         }
     }

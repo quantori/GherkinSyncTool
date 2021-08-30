@@ -39,6 +39,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
             Log.Info($"# Start synchronization with TestRail");
             var stopwatch = Stopwatch.StartNew();
             var casesToMove = new Dictionary<ulong, List<ulong>>(); 
+            
             foreach (var featureFile in featureFiles)
             {
                 var insertedTagIds = 0;
@@ -85,7 +86,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
             {   
                 _testRailClientWrapper.MoveCases(key, value);
             }
-            Log.Info(@$"Synchronization with TestRail finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
+            Log.Debug(@$"Synchronization with TestRail finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
         }
 
         /// <summary>
