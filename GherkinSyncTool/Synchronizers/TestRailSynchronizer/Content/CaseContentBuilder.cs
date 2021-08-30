@@ -25,9 +25,10 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
                 SectionId = sectionId,
                 CustomFields = new CaseCustomFields
                 {
-                    CustomPreconditions = ConvertToStringPreconditions(scenario, featureFile),
-                    CustomStepsSeparated = ConvertToCustomStepsSeparated(steps),
-                    CustomTags = ConvertToStringTags(scenario, featureFile)
+                    Preconditions = ConvertToStringPreconditions(scenario, featureFile),
+                    StepsSeparated = ConvertToCustomStepsSeparated(steps),
+                    Tags = ConvertToStringTags(scenario, featureFile),
+                    GherkinSyncToolId = _config.TestRailSettings.GherkinSyncToolId
                 },
                 TemplateId = templateId
             };

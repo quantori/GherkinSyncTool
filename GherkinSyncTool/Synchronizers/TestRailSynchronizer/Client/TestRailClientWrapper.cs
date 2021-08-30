@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Reflection;
 using GherkinSyncTool.Configuration;
 using GherkinSyncTool.Exceptions;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Model;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
 using Polly;
@@ -22,19 +19,13 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
         private readonly TestRailClient _testRailClient;
-        private readonly GherkynSyncToolConfig _config;
-        private readonly int _attemptsCount;
-        private readonly int _sleepDuration;
+        private readonly GherkynSyncToolConfig _config = ConfigurationManager.GetConfiguration();
+        private int _requestsCount;
 
-        private int? _requestsCount;
-
-        public TestRailClientWrapper(TestRailClient testRailClient)
+        public TestRailClientWrapper()
         {
-            _testRailClient = testRailClient;
-            _config = ConfigurationManager.GetConfiguration();
-            _requestsCount ??= 0;
-            _attemptsCount = _config.TestRailSettings.RetriesCount ?? 3;
-            _sleepDuration = _config.TestRailSettings.PauseBetweenRetriesSeconds ?? 5;
+            _testRailClient = new TestRailClient(_config.TestRailSettings.BaseUrl,
+                _config.TestRailSettings.UserName, _config.TestRailSettings.Password);
         }
 
         public Case AddCase(CaseRequest caseRequest)
@@ -157,10 +148,10 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
         private RetryPolicy<RequestResult<T>> CreateResultHandlerPolicy<T>()
         {
             return Policy.HandleResult<RequestResult<T>>(r=>(int)r.StatusCode < 200 || (int)r.StatusCode > 299)
-                .WaitAndRetry(_attemptsCount, retryAttempt =>
+                .WaitAndRetry(_config.TestRailSettings.RetriesCount, retryAttempt =>
                 {
-                    Log.Debug($"Attempt {retryAttempt} of {_attemptsCount}, waiting for {_sleepDuration} seconds");
-                    return TimeSpan.FromSeconds(_sleepDuration);
+                    Log.Debug($"Attempt {retryAttempt} of {_config.TestRailSettings.RetriesCount}, waiting for {_config.TestRailSettings.PauseBetweenRetriesSeconds} seconds");
+                    return TimeSpan.FromSeconds(_config.TestRailSettings.PauseBetweenRetriesSeconds);
                 });
         }
 
