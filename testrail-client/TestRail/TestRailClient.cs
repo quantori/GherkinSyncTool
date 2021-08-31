@@ -1,10 +1,10 @@
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using Newtonsoft.Json.Linq;
 using TestRail.Enums;
 using TestRail.Types;
 using TestRail.Utils;
@@ -669,6 +669,28 @@ namespace TestRail
             return _SendPostCommand<Case>(uri);
         }
 
+        /// <summary>
+        /// Deletes multiple test cases from a project or test suite. This action requires the account to have permissions to delete.
+        /// </summary>
+        /// <param name="projectId">The ID of the project</param>
+        /// <param name="caseIds">Array of caseIds to be moved</param>
+        /// <param name="suiteId">The ID of the suite (Only required if project is in multi-suite mode)</param>
+        /// <param name="soft">Optional parameter. soft=1 will return information about the data which will be deleted, but will not proceed with the deletion.</param>
+        /// <returns>
+        /// Please Note: Deleting test cases cannot be undone and will also delete any associated tests and results in open test runs and test plans.
+        /// </returns>
+        public RequestResult<BaseTestRailType> DeleteCases(ulong projectId, IEnumerable<ulong> caseIds, ulong? suiteId = null, int? soft = null)
+        {
+            var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i=>i.ToString()))));
+            
+            var optionalSuiteId = suiteId.HasValue ? $"&suite_id={suiteId.Value}" : string.Empty;
+            var optionalSoft = soft.HasValue ? $"&soft={soft.Value}" : string.Empty;
+            var options = $"{optionalSuiteId}{optionalSoft}";
+
+            var uri = _CreateUri_(CommandType.Delete, CommandAction.Cases, projectId, null, options);
+            return _SendPostCommand<BaseTestRailType>(uri, cases);
+        }
+
         /// <summary>Deletes an existing test plan. This action requires the account to have permissions to delete.</summary>
         /// <param name="planId">The ID of the test plan.</param>
         /// <returns>Please note: Deleting a test plan cannot be undone and also permanently deletes all test runs and results of the test plan.</returns>
@@ -745,13 +767,13 @@ namespace TestRail
         /// <param name="newSectionId">Id of the new section</param>
         /// <param name="caseIds">Array of caseIds to be moved</param>
         /// <returns></returns>
-        public RequestResult<Result> MoveCases(ulong newSectionId, IEnumerable<ulong> caseIds)
+        public RequestResult<BaseTestRailType> MoveCases(ulong newSectionId, IEnumerable<ulong> caseIds)
         {
             var uri = _CreateUri_(CommandType.Move, CommandAction.CasesToSection, newSectionId);
 
             var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i=>i.ToString()))));
 
-            return _SendPostCommand<Result>(uri, cases);
+            return _SendPostCommand<BaseTestRailType>(uri, cases);
         }
 
         #endregion

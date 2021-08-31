@@ -7,7 +7,6 @@ using GherkinSyncTool.Configuration;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Model;
 using NLog;
-using TestRail.Types;
 
 namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
 {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Reflection;
 using GherkinSyncTool.Configuration;
@@ -72,7 +73,24 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
             
             ValidateRequestResult(cases);
 
-            return cases.Payload;
+            var gherkinToolCases = cases.Payload.Where(c =>
+            {
+                var caseCustomFields = c.JsonFromResponse.ToObject<CaseCustomFields>();
+                return caseCustomFields.GherkinSyncToolId is not null && caseCustomFields.GherkinSyncToolId.Equals(_config.TestRailSettings.GherkinSyncToolId);
+            });
+
+            return gherkinToolCases.ToList();
+        }
+        
+        public void DeleteCases(IEnumerable<ulong> caseIds)
+        {
+            var policy = CreateResultHandlerPolicy<BaseTestRailType>();
+            var cases = policy.Execute(()=>
+                _testRailClient.DeleteCases(_config.TestRailSettings.ProjectId, caseIds, _config.TestRailSettings.SuiteId, 1));
+            
+            ValidateRequestResult(cases);
+            
+            Log.Info($"Deleted cases: {string.Join(", ", caseIds)}");
         }
 
         private void ValidateRequestResult<T>(RequestResult<T> requestResult)
@@ -125,7 +143,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
         /// <param name="caseIds">collection of feature file id's</param>
         public void MoveCases(ulong newSectionId, IEnumerable<ulong> caseIds)
         {
-            var policy = CreateResultHandlerPolicy<Result>();
+            var policy = CreateResultHandlerPolicy<BaseTestRailType>();
             var result = policy.Execute(()=>
                 _testRailClient.MoveCases(newSectionId, caseIds));
             ValidateRequestResult(result);
