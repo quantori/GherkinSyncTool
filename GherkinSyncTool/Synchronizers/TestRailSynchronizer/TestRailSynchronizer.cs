@@ -11,6 +11,7 @@ using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content;
 using GherkinSyncTool.Utils;
 using NLog;
+using TestRail.Types;
 
 namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
 {
@@ -38,6 +39,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
             var stopwatch = Stopwatch.StartNew();
             var casesToMove = new Dictionary<ulong, List<ulong>>();
             var testRailCases = _testRailClientWrapper.GetCases();
+            var featureFilesTagIds = new List<ulong>(); 
 
             foreach (var featureFile in featureFiles)
             {
@@ -65,7 +67,8 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
                     if (tagId is not null)
                     {
                         var caseId = UInt64.Parse(Regex.Match(tagId.Name, @"\d+").Value);
-
+                        featureFilesTagIds.Add(caseId);
+                            
                         var testRailCase = testRailCases.FirstOrDefault(c => c.Id == caseId);
                         if (testRailCase is null)
                         {
@@ -85,12 +88,27 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
                 }
             }
 
-            // Moving cases to new sections
+            MoveCasesToNewSections(casesToMove);
+
+            DeleteNotExistingScenarios(testRailCases, featureFilesTagIds);
+
+            Log.Debug(@$"Synchronization with TestRail finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
+        }
+
+        private void DeleteNotExistingScenarios(IList<Case> testRailCases, List<ulong> featureFilesTagIds)
+        {
+            var testRailTagIds = testRailCases.Where(c => c.Id is not null).Select(c => c.Id.Value);
+            var differentTagIds = testRailTagIds.Except(featureFilesTagIds);
+           //TODO: asked TestRail support. When parameter soft=1 testcase shouldn't be deleted permanently. 
+           //_testRailClientWrapper.DeleteCases(differentTagIds);
+        }
+
+        private void MoveCasesToNewSections(Dictionary<ulong, List<ulong>> casesToMove)
+        {
             foreach (var (key, value) in casesToMove)
             {
                 _testRailClientWrapper.MoveCases(key, value);
             }
-            Log.Debug(@$"Synchronization with TestRail finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
         }
 
         /// <summary>
