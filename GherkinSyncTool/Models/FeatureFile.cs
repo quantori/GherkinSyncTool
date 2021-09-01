@@ -18,7 +18,7 @@ namespace GherkinSyncTool.Models
             Document = document;
             AbsolutePath = Path.GetFullPath(path);
             var baseDirectory = new DirectoryInfo(ConfigurationManager.GetConfiguration().BaseDirectory);
-            var relativeToDirectory = baseDirectory?.Parent?.FullName ?? 
+            var relativeToDirectory = baseDirectory.Parent?.FullName ?? 
                                       throw new DirectoryNotFoundException($"Base directory {baseDirectory} does not have a parent");
             RelativePath = Path.GetRelativePath(relativeToDirectory, AbsolutePath);
         }

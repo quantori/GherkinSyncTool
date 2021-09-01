@@ -776,6 +776,25 @@ namespace TestRail
             return _SendPostCommand<BaseTestRailType>(uri, cases);
         }
 
+        /// <summary>
+        /// Moves a section to another suite or section. (Requires TestRail 6.5.2 or later)
+        /// </summary>
+        /// <param name="sectionId">The ID of the section.</param>
+        /// <param name="parentId">The ID of the parent section (it can be null if it should be moved to the root). Must be in the same project and suite. May not be direct child of the section being moved.</param>
+        /// <param name="afterId">The section ID after which the section should be put (can be null)</param>
+        /// <returns></returns>
+        public RequestResult<BaseTestRailType> MoveSection(ulong sectionId, ulong? parentId = null, ulong? afterId = null)
+        {
+            var uri = _CreateUri_(CommandType.Move, CommandAction.Section, sectionId);
+
+            var parent = new JProperty("parent_id", parentId);
+            var after = new JProperty("after_id", afterId);
+
+            var newPosition = new JObject {parent, after};
+
+            return _SendPostCommand<BaseTestRailType>(uri, newPosition);
+        }
+
         #endregion
 
         #region Get Commands

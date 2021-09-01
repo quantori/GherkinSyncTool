@@ -84,6 +84,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
         
         public void DeleteCases(IEnumerable<ulong> caseIds)
         {
+            Log.Debug("Deleting scenarios which are not exist.");
             var policy = CreateResultHandlerPolicy<BaseTestRailType>();
             var cases = policy.Execute(()=>
                 _testRailClient.DeleteCases(_config.TestRailSettings.ProjectId, caseIds, _config.TestRailSettings.SuiteId, 1));
@@ -91,23 +92,6 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
             ValidateRequestResult(cases);
             
             Log.Info($"Deleted cases: {string.Join(", ", caseIds)}");
-        }
-
-        private void ValidateRequestResult<T>(RequestResult<T> requestResult)
-        {
-            if (requestResult.StatusCode != HttpStatusCode.OK)
-            {
-                if(!string.IsNullOrEmpty(requestResult.RawJson) &&
-                   requestResult.RawJson.Contains("not a valid test case"))
-                    throw new TestRailNoCaseException("Case not found", requestResult.ThrownException);
-                
-                throw new TestRailException(
-                    $"There is an issue with requesting TestRail: {requestResult.StatusCode.ToString()} " +
-                    $"{Environment.NewLine}{requestResult.RawJson}",
-                    requestResult.ThrownException);
-            }
-
-            Log.Debug($"Requests sent: {++_requestsCount}");
         }
 
         public ulong? CreateSection(CreateSectionRequest request)
@@ -136,6 +120,23 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
             return result.Payload;
         }
 
+        private void ValidateRequestResult<T>(RequestResult<T> requestResult)
+        {
+            if (requestResult.StatusCode != HttpStatusCode.OK)
+            {
+                if(!string.IsNullOrEmpty(requestResult.RawJson) &&
+                   requestResult.RawJson.Contains("not a valid test case"))
+                    throw new TestRailNoCaseException("Case not found", requestResult.ThrownException);
+                
+                throw new TestRailException(
+                    $"There is an issue with requesting TestRail: {requestResult.StatusCode.ToString()} " +
+                    $"{Environment.NewLine}{requestResult.RawJson}",
+                    requestResult.ThrownException);
+            }
+
+            Log.Debug($"Requests sent: {++_requestsCount}");
+        }
+
         /// <summary>
         /// Moves feature files to new section
         /// </summary>
@@ -143,6 +144,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
         /// <param name="caseIds">collection of feature file id's</param>
         public void MoveCases(ulong newSectionId, IEnumerable<ulong> caseIds)
         {
+            Log.Debug("Moving testcases to new sections.");
             var policy = CreateResultHandlerPolicy<BaseTestRailType>();
             var result = policy.Execute(()=>
                 _testRailClient.MoveCases(newSectionId, caseIds));
