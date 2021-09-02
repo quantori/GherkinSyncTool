@@ -92,6 +92,8 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
 
             DeleteNotExistingScenarios(testRailCases, featureFilesTagIds);
 
+            _sectionSynchronizer.MoveNotExistingSectionsToArchive(featureFiles);
+
             Log.Debug(@$"Synchronization with TestRail finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
         }
 

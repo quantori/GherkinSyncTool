@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using GherkinSyncTool.Configuration;
+using GherkinSyncTool.Interfaces;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Model;
 using NLog;
@@ -21,9 +22,10 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
         {
             _config = ConfigurationManager.GetConfiguration();
             _testRailClientWrapper = testRailClientWrapper;
-           _testRailSections = GetSectionsTree(_config.TestRailSettings.ProjectId, _config.TestRailSettings.SuiteId).ToList();
+            _testRailSections = GetSectionsTree(_config.TestRailSettings.ProjectId, _config.TestRailSettings.SuiteId)
+                .ToList();
         }
-        
+
         /// <summary>
         /// Gets or creates TestRail section Id for selected .feature file
         /// </summary>
@@ -38,8 +40,8 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
             //Path includes name of the feature file - hence SkipLast(1)
             var sourceSections = new Queue<string>(relativePath.Split(Path.DirectorySeparatorChar).SkipLast(1));
             return GetOrCreateSectionIdRecursively(_testRailSections, sourceSections, suiteId, projectId);
-        }        
-        
+        }
+
         /// <summary>
         /// Builds a tree structure for TestRail sections
         /// </summary>
@@ -67,6 +69,78 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
             return result;
         }
 
+        public void MoveNotExistingSectionsToArchive(List<IFeatureFile> featureFiles)
+        {
+            var featureFileFolders = GetFeatureFileFolderTree(featureFiles);
+
+            //Define Roots
+            foreach (var testRailSection in _testRailSections)
+            {
+                foreach (var featureFileFolder in featureFileFolders)
+                {
+                    if (featureFileFolder.Name == testRailSection.Name)
+                    {
+                        MoveSectionToArchiveRecursively(featureFileFolder.ChildFolders, testRailSection.ChildSections);
+                    }
+                }
+            }
+        }
+
+        private void MoveSectionToArchiveRecursively(List<FeatureFileFolder> featureFileFolders,
+            List<TestRailSection> testRailSections)
+        {
+            foreach (var testRailSection in testRailSections)
+            {
+                var featureFileFolder = featureFileFolders.Find(fileFolder => fileFolder.Name.Equals(testRailSection.Name));
+
+                if (featureFileFolder is not null)
+                {
+                    MoveSectionToArchiveRecursively(featureFileFolder.ChildFolders, testRailSection.ChildSections);
+                    continue;
+                }
+                
+                //TODO: Archive Section
+                Log.Warn($"Archiving {testRailSection.Id.Value} {testRailSection.Name}");
+               // _testRailClientWrapper.MoveSection(testRailSection.Id.Value, 1111);
+            }
+        }
+
+        private List<FeatureFileFolder> GetFeatureFileFolderTree(List<IFeatureFile> featureFiles)
+        {
+            var result = new List<FeatureFileFolder>();
+            
+            var featureFilesPaths = featureFiles.Select(file => Path.GetDirectoryName(file.RelativePath)).Distinct().ToArray();
+            
+            var featureFileFoldersDictionary = new Dictionary<string, FeatureFileFolder>();
+
+            foreach (var folderPath in featureFilesPaths)
+            {
+                var pathSeparated = folderPath.Split(Path.DirectorySeparatorChar);
+                var folderName = pathSeparated.LastOrDefault();
+                var parentPath = Path.Combine(pathSeparated.SkipLast(1).ToArray());
+                
+                var featureFileFolder = new FeatureFileFolder
+                {
+                    Name = folderName,
+                    Path = folderPath,
+                    ParentPath = parentPath
+                };
+
+                featureFileFoldersDictionary.Add(folderPath, featureFileFolder);
+            }
+
+            foreach (var featureFileFolder in featureFileFoldersDictionary.Values)
+            {
+                if (!string.IsNullOrEmpty(featureFileFolder.ParentPath))
+                {
+                    featureFileFoldersDictionary[featureFileFolder.ParentPath].ChildFolders.Add(featureFileFolder);
+                }
+                else result.Add(featureFileFolder);
+            }
+
+            return result;
+        }
+
         /// <summary>
         /// Compares section structures in TestRail and local storage
         /// and returns or creates (if not existed) section Id for the selected .feature file 
@@ -85,6 +159,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
             if (!sourceSections.Any() && parentSectionId is null)
                 throw new InvalidOperationException(
                     "Attempt to create file without setting parent folder. Please check configuration file.");
+
             while (sourceSections.Count != 0)
             {
                 var folderName = sourceSections.Dequeue();
@@ -93,14 +168,20 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
                     foreach (var section in targetSections)
                     {
                         if (section.Name != folderName) continue;
-                        return GetOrCreateSectionIdRecursively(section.ChildSections, sourceSections, suiteId, projectId, section.Id);
+                        return GetOrCreateSectionIdRecursively(section.ChildSections, sourceSections, suiteId,
+                            projectId, section.Id);
                     }
+
                     targetSectionsChecked = true;
                 }
+
                 var parentId = parentSectionId;
-                parentSectionId = _testRailClientWrapper.CreateSection(new CreateSectionRequest(projectId, parentSectionId, suiteId, folderName, null));
+                parentSectionId =
+                    _testRailClientWrapper.CreateSection(new CreateSectionRequest(projectId, parentSectionId, suiteId,
+                        folderName, null));
                 targetSections = CreateChildSection(parentSectionId, suiteId, parentId, folderName, targetSections);
             }
+
             return parentSectionId.Value;
         }
 
@@ -113,7 +194,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
         /// <param name="folderName">name of the folder that represents </param>
         /// <param name="targetSections">collection of sections for the new section to add</param>
         /// <returns></returns>
-        private List<TestRailSection> CreateChildSection(ulong? sectionId, ulong suiteId, ulong? parentId, 
+        private List<TestRailSection> CreateChildSection(ulong? sectionId, ulong suiteId, ulong? parentId,
             string folderName, List<TestRailSection> targetSections)
         {
             var newSection =

@@ -152,6 +152,16 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
             Log.Info($"Moved cases: {string.Join(", ", caseIds)} to section {newSectionId}");
         }
 
+        public void MoveSection(ulong sectionId, ulong? parentId = null, ulong? afterId = null)
+        {
+            Log.Debug("Moving section");
+            var policy = CreateResultHandlerPolicy<BaseTestRailType>();
+            var result = policy.Execute(()=>
+                _testRailClient.MoveSection(sectionId,parentId,afterId));
+            ValidateRequestResult(result);
+            Log.Info($"Section moved: {sectionId}");
+        }
+
         /// <summary>
         /// RetryPolicy for request result of given type 
         /// </summary>
