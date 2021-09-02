@@ -89,19 +89,25 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
         private void MoveSectionToArchiveRecursively(List<FeatureFileFolder> featureFileFolders,
             List<TestRailSection> testRailSections)
         {
+            var archiveSection = _testRailSections.Find(section => section.Name.Equals(_config.TestRailSettings.ArchiveSectionName, StringComparison.InvariantCultureIgnoreCase))?.Id;
+                
+            if (archiveSection is null)
+            {
+                archiveSection = _testRailClientWrapper.CreateSection(new CreateSectionRequest(_config.TestRailSettings.ProjectId,null, _config.TestRailSettings.SuiteId, _config.TestRailSettings.ArchiveSectionName));
+            }
+            
             foreach (var testRailSection in testRailSections)
             {
-                var featureFileFolder = featureFileFolders.Find(fileFolder => fileFolder.Name.Equals(testRailSection.Name));
+                var featureFileFolder = featureFileFolders.Find(fileFolder => fileFolder.Name.Equals(testRailSection.Name, StringComparison.InvariantCultureIgnoreCase));
 
                 if (featureFileFolder is not null)
                 {
                     MoveSectionToArchiveRecursively(featureFileFolder.ChildFolders, testRailSection.ChildSections);
                     continue;
                 }
-                
-                //TODO: Archive Section
-                Log.Warn($"Archiving {testRailSection.Id.Value} {testRailSection.Name}");
-               // _testRailClientWrapper.MoveSection(testRailSection.Id.Value, 1111);
+
+                Log.Debug($"Archiving {testRailSection.Id.Value} {testRailSection.Name}");
+                //TODO: _testRailClientWrapper.MoveSection(testRailSection.Id.Value, archiveSection);
             }
         }
 
@@ -177,8 +183,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
 
                 var parentId = parentSectionId;
                 parentSectionId =
-                    _testRailClientWrapper.CreateSection(new CreateSectionRequest(projectId, parentSectionId, suiteId,
-                        folderName, null));
+                    _testRailClientWrapper.CreateSection(new CreateSectionRequest(projectId, parentSectionId, suiteId, folderName));
                 targetSections = CreateChildSection(parentSectionId, suiteId, parentId, folderName, targetSections);
             }
 

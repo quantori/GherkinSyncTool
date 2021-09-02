@@ -19,6 +19,7 @@
         public string Password { get; set; }
         public int RetriesCount { get; set; } = 3;
         public int PauseBetweenRetriesSeconds { get; set; } = 5;
+        public string ArchiveSectionName { get; set; } = "Archive";
     }
 
     public class FormattingSettings
