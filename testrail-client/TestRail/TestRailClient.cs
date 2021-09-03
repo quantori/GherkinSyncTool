@@ -783,7 +783,7 @@ namespace TestRail
         /// <param name="parentId">The ID of the parent section (it can be null if it should be moved to the root). Must be in the same project and suite. May not be direct child of the section being moved.</param>
         /// <param name="afterId">The section ID after which the section should be put (can be null)</param>
         /// <returns></returns>
-        public RequestResult<BaseTestRailType> MoveSection(ulong sectionId, ulong? parentId = null, ulong? afterId = null)
+        public RequestResult<Section> MoveSection(ulong sectionId, ulong? parentId = null, ulong? afterId = null)
         {
             var uri = _CreateUri_(CommandType.Move, CommandAction.Section, sectionId);
 
@@ -792,7 +792,7 @@ namespace TestRail
 
             var newPosition = new JObject {parent, after};
 
-            return _SendPostCommand<BaseTestRailType>(uri, newPosition);
+            return _SendPostCommand<Section>(uri, newPosition);
         }
 
         #endregion

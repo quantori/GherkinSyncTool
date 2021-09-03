@@ -155,11 +155,11 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
         public void MoveSection(ulong sectionId, ulong? parentId = null, ulong? afterId = null)
         {
             Log.Debug("Moving section");
-            var policy = CreateResultHandlerPolicy<BaseTestRailType>();
+            var policy = CreateResultHandlerPolicy<Section>();
             var result = policy.Execute(()=>
                 _testRailClient.MoveSection(sectionId,parentId,afterId));
             ValidateRequestResult(result);
-            Log.Info($"Section moved: {sectionId}");
+            Log.Info($"Section moved: [{result.Payload.Id}] {result.Payload.Name}");
         }
 
         /// <summary>

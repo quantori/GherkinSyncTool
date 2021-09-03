@@ -42,6 +42,23 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
             return GetOrCreateSectionIdRecursively(_testRailSections, sourceSections, suiteId, projectId);
         }
 
+        public void MoveNotExistingSectionsToArchive(List<IFeatureFile> featureFiles)
+        {
+            var featureFileFolders = GetFeatureFileFolderTree(featureFiles);
+
+            //Define Roots
+            foreach (var testRailSection in _testRailSections)
+            {
+                foreach (var featureFileFolder in featureFileFolders)
+                {
+                    if (featureFileFolder.Name == testRailSection.Name)
+                    {
+                        MoveSectionToArchiveRecursively(featureFileFolder.ChildFolders, testRailSection.ChildSections);
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Builds a tree structure for TestRail sections
         /// </summary>
@@ -69,23 +86,6 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
             return result;
         }
 
-        public void MoveNotExistingSectionsToArchive(List<IFeatureFile> featureFiles)
-        {
-            var featureFileFolders = GetFeatureFileFolderTree(featureFiles);
-
-            //Define Roots
-            foreach (var testRailSection in _testRailSections)
-            {
-                foreach (var featureFileFolder in featureFileFolders)
-                {
-                    if (featureFileFolder.Name == testRailSection.Name)
-                    {
-                        MoveSectionToArchiveRecursively(featureFileFolder.ChildFolders, testRailSection.ChildSections);
-                    }
-                }
-            }
-        }
-
         private void MoveSectionToArchiveRecursively(List<FeatureFileFolder> featureFileFolders,
             List<TestRailSection> testRailSections)
         {
@@ -106,8 +106,8 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
                     continue;
                 }
 
-                Log.Debug($"Archiving {testRailSection.Id.Value} {testRailSection.Name}");
-                //TODO: _testRailClientWrapper.MoveSection(testRailSection.Id.Value, archiveSection);
+                Log.Debug($"Section [{testRailSection.Id.Value}] {testRailSection.Name} is moving to {_config.TestRailSettings.ArchiveSectionName}.");
+                _testRailClientWrapper.MoveSection(testRailSection.Id.Value, archiveSection);
             }
         }
 
