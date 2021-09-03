@@ -77,7 +77,8 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
                             
                             var formattedTagId = _tagIndentation + _config.TagIdPrefix + testRailCase.Id;
                             TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath, tagId.Location.Line - 1 + insertedTagIds,formattedTagId);
-                        }else
+                        }
+                        else
                         {
                             _testRailClientWrapper.UpdateCase(testRailCase, caseRequest);    
                         }
@@ -101,8 +102,8 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
         {
             var testRailTagIds = testRailCases.Where(c => c.Id is not null).Select(c => c.Id.Value);
             var differentTagIds = testRailTagIds.Except(featureFilesTagIds);
-           //TODO: asked TestRail support. When parameter soft=1 testcase shouldn't be deleted permanently. 
-           //_testRailClientWrapper.DeleteCases(differentTagIds);
+            //TODO: asked TestRail support. When parameter soft=1 testcase shouldn't be deleted permanently. 
+            _testRailClientWrapper.DeleteCases(differentTagIds);
         }
 
         private void MoveCasesToNewSections(Dictionary<ulong, List<ulong>> casesToMove)

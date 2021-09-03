@@ -106,7 +106,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
                     continue;
                 }
 
-                Log.Debug($"Section [{testRailSection.Id.Value}] {testRailSection.Name} is moving to {_config.TestRailSettings.ArchiveSectionName}.");
+                Log.Warn($"Section [{testRailSection.Id.Value}] {testRailSection.Name} is moving to {_config.TestRailSettings.ArchiveSectionName}.");
                 _testRailClientWrapper.MoveSection(testRailSection.Id.Value, archiveSection);
             }
         }
@@ -122,14 +122,13 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
             foreach (var folderPath in featureFilesPaths)
             {
                 var pathSeparated = folderPath.Split(Path.DirectorySeparatorChar);
-                var folderName = pathSeparated.LastOrDefault();
+                var folderName = pathSeparated.Last();
                 var parentPath = Path.Combine(pathSeparated.SkipLast(1).ToArray());
                 
                 var featureFileFolder = new FeatureFileFolder
                 {
                     Name = folderName,
-                    Path = folderPath,
-                    ParentPath = parentPath
+                    ParentFolderPath = parentPath
                 };
 
                 featureFileFoldersDictionary.Add(folderPath, featureFileFolder);
@@ -137,9 +136,9 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
 
             foreach (var featureFileFolder in featureFileFoldersDictionary.Values)
             {
-                if (!string.IsNullOrEmpty(featureFileFolder.ParentPath))
+                if (!string.IsNullOrEmpty(featureFileFolder.ParentFolderPath))
                 {
-                    featureFileFoldersDictionary[featureFileFolder.ParentPath].ChildFolders.Add(featureFileFolder);
+                    featureFileFoldersDictionary[featureFileFolder.ParentFolderPath].ChildFolders.Add(featureFileFolder);
                 }
                 else result.Add(featureFileFolder);
             }
