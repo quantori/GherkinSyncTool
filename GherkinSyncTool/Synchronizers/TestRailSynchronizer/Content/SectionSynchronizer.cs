@@ -6,6 +6,7 @@ using System.Reflection;
 using GherkinSyncTool.Configuration;
 using GherkinSyncTool.Exceptions;
 using GherkinSyncTool.Interfaces;
+using GherkinSyncTool.Models;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Model;
 using NLog;
@@ -18,11 +19,13 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
         private readonly TestRailClientWrapper _testRailClientWrapper;
         private readonly GherkynSyncToolConfig _config;
         private List<TestRailSection> _testRailSections;
+        private readonly Context _context;
 
-        public SectionSynchronizer(TestRailClientWrapper testRailClientWrapper)
+        public SectionSynchronizer(TestRailClientWrapper testRailClientWrapper, Context context)
         {
             _config = ConfigurationManager.GetConfiguration();
             _testRailClientWrapper = testRailClientWrapper;
+            _context = context;
             _testRailSections = GetSectionsTree(_config.TestRailSettings.ProjectId, _config.TestRailSettings.SuiteId)
                 .ToList();
         }
@@ -115,6 +118,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
                 catch (TestRailException e)
                 {
                     Log.Error(e, $"The section has not been moved: {testRailSection.Name}");
+                    _context.IsRunSuccessful = false;
                 }
             }
         }

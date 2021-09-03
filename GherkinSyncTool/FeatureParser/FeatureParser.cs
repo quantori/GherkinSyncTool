@@ -11,6 +11,12 @@ namespace GherkinSyncTool.FeatureParser
     public class FeatureParser
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
+        private readonly Context _context;
+
+        public FeatureParser(Context context)
+        {
+            _context = context;
+        }
 
         public List<IFeatureFile> Parse(IEnumerable<string> gherkinFilePaths)
         {
@@ -26,6 +32,7 @@ namespace GherkinSyncTool.FeatureParser
                 catch (CompositeParserException e)
                 {
                     Log.Error(e, $"The file has not been parsed: {gherkinFilePath}");
+                    _context.IsRunSuccessful = false;
                 }
                 catch (Exception e)
                 {

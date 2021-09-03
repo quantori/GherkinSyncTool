@@ -8,6 +8,7 @@ using Gherkin.Ast;
 using GherkinSyncTool.Configuration;
 using GherkinSyncTool.Exceptions;
 using GherkinSyncTool.Interfaces;
+using GherkinSyncTool.Models;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content;
 using GherkinSyncTool.Utils;
@@ -24,13 +25,15 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
         private readonly SectionSynchronizer _sectionSynchronizer;
         private readonly GherkynSyncToolConfig _config = ConfigurationManager.GetConfiguration();
         private readonly string _tagIndentation;
+        private readonly Context _context;
 
         public TestRailSynchronizer(TestRailClientWrapper testRailClientWrapper, CaseContentBuilder caseContentBuilder,
-            SectionSynchronizer sectionSynchronizer)
+            SectionSynchronizer sectionSynchronizer, Context context)
         {
             _testRailClientWrapper = testRailClientWrapper;
             _caseContentBuilder = caseContentBuilder;
             _sectionSynchronizer = sectionSynchronizer;
+            _context = context;
             _tagIndentation = new string(' ', _config.FormattingSettings.TagIndentation);
         }
 
@@ -63,6 +66,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
                         catch (TestRailException e)
                         {
                             Log.Error(e, $"The case has not been created: {scenario.Name}");
+                            _context.IsRunSuccessful = false;
                             continue;
                         } 
                         
@@ -90,6 +94,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
                             catch (TestRailException e)
                             {
                                 Log.Error(e, $"The case has not been created: {scenario.Name}");
+                                _context.IsRunSuccessful = false;
                                 continue;
                             }
                             var formattedTagId = _tagIndentation + _config.TagIdPrefix + testRailCase.Id;
@@ -105,6 +110,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
                             catch (TestRailException e)
                             {
                                 Log.Error(e, $"The case has not been updated: {scenario.Name}");
+                                _context.IsRunSuccessful = false;
                             }
                         }
                         
@@ -135,6 +141,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
             catch (TestRailException e)
             {
                 Log.Error(e, $"The cases has not been deleted: {string.Join(", ", differentTagIds)}");
+                _context.IsRunSuccessful = false;
             }
         }
 
@@ -149,6 +156,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
                 catch (TestRailException e)
                 {
                     Log.Error(e, $"The case has not been moved: {value}");
+                    _context.IsRunSuccessful = false;
                 }
             }
         }

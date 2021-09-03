@@ -5,6 +5,7 @@ using System.Reflection;
 using Autofac;
 using GherkinSyncTool.DI;
 using GherkinSyncTool.Interfaces;
+using GherkinSyncTool.Models;
 using NLog;
 
 namespace GherkinSyncTool
@@ -41,6 +42,13 @@ namespace GherkinSyncTool
                 var synchronizer = container.Resolve<ISynchronizer>();
                 synchronizer.Sync(featureFiles);
                 Log.Info(@$"Synchronization finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
+                
+                var context = container.Resolve<Context>();
+                if (!context.IsRunSuccessful)
+                {
+                    Log.Fatal($"GherkinSyncTool did not complete successfully. Please check errors in the log.");
+                    return 1;
+                }
             }
             catch (Exception ex)
             {
@@ -51,7 +59,6 @@ namespace GherkinSyncTool
 
                 return 1;
             }
-
             return 0;
         }
 
