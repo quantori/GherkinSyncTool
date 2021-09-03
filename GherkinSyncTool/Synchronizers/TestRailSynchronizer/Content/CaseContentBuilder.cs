@@ -104,6 +104,8 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
                 }
             }
 
+            allTags.RemoveAll(tag => tag.Name.Contains(_config.TagIdPrefix));
+
             return allTags.Any() ? string.Join(", ", allTags.Select(tag => tag.Name.Substring(1))) : null;
         }
 
