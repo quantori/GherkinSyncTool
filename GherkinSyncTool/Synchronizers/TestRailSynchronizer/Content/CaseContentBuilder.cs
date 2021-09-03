@@ -115,12 +115,12 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
             preconditions.AppendLine($"## {scenario.Keyword}: {scenario.Name}");
             preconditions.AppendLine(scenario.Description);
             
-            var examples = scenario.Examples;
-            if (examples != null && examples.Any())
+            var examples = scenario.Examples.ToList();
+            if (examples.Any())
             {
                 foreach (var example in examples)
                 {
-                    preconditions.AppendLine($"## {example.Name}");
+                    preconditions.AppendLine($"## {example.Keyword}: {example.Name}");
 
                     var tableRows = new List<TableRow> {example.TableHeader};
                     tableRows.AddRange(example.TableBody);
