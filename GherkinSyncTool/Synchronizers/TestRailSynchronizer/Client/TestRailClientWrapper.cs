@@ -87,7 +87,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
             Log.Debug("Deleting scenarios which are not exist.");
             var policy = CreateResultHandlerPolicy<BaseTestRailType>();
             var cases = policy.Execute(()=>
-                _testRailClient.DeleteCases(_config.TestRailSettings.ProjectId, caseIds, _config.TestRailSettings.SuiteId, 1));
+                _testRailClient.DeleteCases(_config.TestRailSettings.ProjectId, caseIds, _config.TestRailSettings.SuiteId, true));
             
             ValidateRequestResult(cases);
             

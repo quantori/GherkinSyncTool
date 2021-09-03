@@ -60,7 +60,7 @@ namespace GherkinSyncTool
             var featureFilesGrabber = container.Resolve<IFeatureFilesGrabber>();
             var parseFilesStopwatch = Stopwatch.StartNew();
             var featureFiles = featureFilesGrabber.TakeFiles();
-            Log.Info(@$"{featureFiles.Count} file(s) found in {parseFilesStopwatch.Elapsed:mm\:ss\.fff}");
+            Log.Info(@$"{featureFiles.Count} file(s) parsed in {parseFilesStopwatch.Elapsed:mm\:ss\.fff}");
             return featureFiles;
         }
     }

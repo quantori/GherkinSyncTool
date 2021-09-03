@@ -679,12 +679,12 @@ namespace TestRail
         /// <returns>
         /// Please Note: Deleting test cases cannot be undone and will also delete any associated tests and results in open test runs and test plans.
         /// </returns>
-        public RequestResult<BaseTestRailType> DeleteCases(ulong projectId, IEnumerable<ulong> caseIds, ulong? suiteId = null, int? soft = null)
+        public RequestResult<BaseTestRailType> DeleteCases(ulong projectId, IEnumerable<ulong> caseIds, ulong? suiteId = null, bool? soft = null)
         {
             var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i=>i.ToString()))));
             
             var optionalSuiteId = suiteId.HasValue ? $"&suite_id={suiteId.Value}" : string.Empty;
-            var optionalSoft = soft.HasValue ? $"&soft={soft.Value}" : string.Empty;
+            var optionalSoft = soft.HasValue ? $"&soft={(soft.Value ? 1 : 0)}" : string.Empty;
             var options = $"{optionalSuiteId}{optionalSoft}";
 
             var uri = _CreateUri_(CommandType.Delete, CommandAction.Cases, projectId, null, options);

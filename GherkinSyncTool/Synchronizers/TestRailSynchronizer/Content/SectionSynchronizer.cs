@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using GherkinSyncTool.Configuration;
+using GherkinSyncTool.Exceptions;
 using GherkinSyncTool.Interfaces;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Model;
@@ -107,7 +108,14 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
                 }
 
                 Log.Warn($"Section [{testRailSection.Id.Value}] {testRailSection.Name} is moving to {_config.TestRailSettings.ArchiveSectionName}.");
-                _testRailClientWrapper.MoveSection(testRailSection.Id.Value, archiveSection);
+                try
+                {
+                    _testRailClientWrapper.MoveSection(testRailSection.Id.Value, archiveSection);
+                }
+                catch (TestRailException e)
+                {
+                    Log.Error(e, $"The section has not been moved: {testRailSection.Name}");
+                }
             }
         }
 

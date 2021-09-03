@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Gherkin.Ast;
 using GherkinSyncTool.Configuration;
+using GherkinSyncTool.Exceptions;
 using GherkinSyncTool.Interfaces;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content;
@@ -54,8 +55,17 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
                     // Create test case for feature file that first time sync with TestRail, no tag id present.  
                     if (tagId is null)
                     {
-                        var addCaseResponse = _testRailClientWrapper.AddCase(caseRequest);
-
+                        Case addCaseResponse;
+                        try
+                        {
+                            addCaseResponse = _testRailClientWrapper.AddCase(caseRequest);
+                        }
+                        catch (TestRailException e)
+                        {
+                            Log.Error(e, $"The case has not been created: {scenario.Name}");
+                            continue;
+                        } 
+                        
                         var lineNumberToInsert = scenario.Location.Line - 1 + insertedTagIds;
                         var formattedTagId = _tagIndentation + _config.TagIdPrefix + addCaseResponse.Id;
                         TextFilesEditMethods.InsertLineToTheFile(featureFile.AbsolutePath, lineNumberToInsert,
@@ -73,14 +83,29 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
                         if (testRailCase is null)
                         {
                             Log.Warn($"Case with id {caseId} not found. Recreating missing case");
-                            testRailCase = _testRailClientWrapper.AddCase(caseRequest);
-                            
+                            try
+                            {
+                                testRailCase = _testRailClientWrapper.AddCase(caseRequest);
+                            }
+                            catch (TestRailException e)
+                            {
+                                Log.Error(e, $"The case has not been created: {scenario.Name}");
+                                continue;
+                            }
                             var formattedTagId = _tagIndentation + _config.TagIdPrefix + testRailCase.Id;
-                            TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath, tagId.Location.Line - 1 + insertedTagIds,formattedTagId);
+                            TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath,
+                                tagId.Location.Line - 1 + insertedTagIds, formattedTagId);
                         }
                         else
                         {
-                            _testRailClientWrapper.UpdateCase(testRailCase, caseRequest);    
+                            try
+                            {
+                                _testRailClientWrapper.UpdateCase(testRailCase, caseRequest);    
+                            }
+                            catch (TestRailException e)
+                            {
+                                Log.Error(e, $"The case has not been updated: {scenario.Name}");
+                            }
                         }
                         
                         var testRailSectionId = testRailCase.SectionId;
@@ -101,16 +126,30 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
         private void DeleteNotExistingScenarios(IList<Case> testRailCases, List<ulong> featureFilesTagIds)
         {
             var testRailTagIds = testRailCases.Where(c => c.Id is not null).Select(c => c.Id.Value);
-            var differentTagIds = testRailTagIds.Except(featureFilesTagIds);
+            var differentTagIds = testRailTagIds.Except(featureFilesTagIds).ToArray();
             //TODO: asked TestRail support. When parameter soft=1 testcase shouldn't be deleted permanently. 
-            _testRailClientWrapper.DeleteCases(differentTagIds);
+            try
+            {
+                _testRailClientWrapper.DeleteCases(differentTagIds);
+            }
+            catch (TestRailException e)
+            {
+                Log.Error(e, $"The cases has not been deleted: {string.Join(", ", differentTagIds)}");
+            }
         }
 
         private void MoveCasesToNewSections(Dictionary<ulong, List<ulong>> casesToMove)
         {
             foreach (var (key, value) in casesToMove)
             {
-                _testRailClientWrapper.MoveCases(key, value);
+                try
+                {
+                    _testRailClientWrapper.MoveCases(key, value);
+                }
+                catch (TestRailException e)
+                {
+                    Log.Error(e, $"The case has not been moved: {value}");
+                }
             }
         }
 
