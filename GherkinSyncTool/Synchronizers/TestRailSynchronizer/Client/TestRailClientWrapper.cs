@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
 using GherkinSyncTool.Configuration;
 using GherkinSyncTool.Exceptions;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Model;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
 using Polly;
@@ -22,19 +20,13 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
         private readonly TestRailClient _testRailClient;
-        private readonly GherkynSyncToolConfig _config;
-        private readonly int _attemptsCount;
-        private readonly int _sleepDuration;
+        private readonly GherkynSyncToolConfig _config = ConfigurationManager.GetConfiguration();
+        private int _requestsCount;
 
-        private int? _requestsCount;
-
-        public TestRailClientWrapper(TestRailClient testRailClient)
+        public TestRailClientWrapper()
         {
-            _testRailClient = testRailClient;
-            _config = ConfigurationManager.GetConfiguration();
-            _requestsCount ??= 0;
-            _attemptsCount = _config.TestRailSettings.RetriesCount ?? 3;
-            _sleepDuration = _config.TestRailSettings.PauseBetweenRetriesSeconds ?? 5;
+            _testRailClient = new TestRailClient(_config.TestRailSettings.BaseUrl,
+                _config.TestRailSettings.UserName, _config.TestRailSettings.Password);
         }
 
         public Case AddCase(CaseRequest caseRequest)
@@ -72,33 +64,34 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
                 Log.Info($"Up-to-date: [{caseId}] {caseToUpdate.Title}");
             }
         }
-
-        public Case GetCase(ulong id)
+        
+        public IList<Case> GetCases()
         {
-            var policy = CreateResultHandlerPolicy<Case>();
-            var testRailCase = policy.Execute(()=>
-                _testRailClient.GetCase(id));
+            var policy = CreateResultHandlerPolicy<IList<Case>>();
+            var cases = policy.Execute(()=>
+                _testRailClient.GetCases(_config.TestRailSettings.ProjectId, _config.TestRailSettings.SuiteId, null, _config.TestRailSettings.TemplateId));
             
-            ValidateRequestResult(testRailCase);
+            ValidateRequestResult(cases);
 
-            return testRailCase.Payload;
-        }
-
-        private void ValidateRequestResult<T>(RequestResult<T> requestResult)
-        {
-            if (requestResult.StatusCode != HttpStatusCode.OK)
+            var gherkinToolCases = cases.Payload.Where(c =>
             {
-                if(!string.IsNullOrEmpty(requestResult.RawJson) &&
-                   requestResult.RawJson.Contains("not a valid test case"))
-                    throw new TestRailNoCaseException("Case not found", requestResult.ThrownException);
-                
-                throw new TestRailException(
-                    $"There is an issue with requesting TestRail: {requestResult.StatusCode.ToString()} " +
-                    $"{Environment.NewLine}{requestResult.RawJson}",
-                    requestResult.ThrownException);
-            }
+                var caseCustomFields = c.JsonFromResponse.ToObject<CaseCustomFields>();
+                return caseCustomFields.GherkinSyncToolId is not null && caseCustomFields.GherkinSyncToolId.Equals(_config.TestRailSettings.GherkinSyncToolId);
+            });
 
-            Log.Debug($"Requests sent: {++_requestsCount}");
+            return gherkinToolCases.ToList();
+        }
+        
+        public void DeleteCases(IEnumerable<ulong> caseIds)
+        {
+            Log.Debug("Deleting scenarios which are not exist.");
+            var policy = CreateResultHandlerPolicy<BaseTestRailType>();
+            var cases = policy.Execute(()=>
+                _testRailClient.DeleteCases(_config.TestRailSettings.ProjectId, caseIds, _config.TestRailSettings.SuiteId, true));
+            
+            ValidateRequestResult(cases);
+            
+            Log.Info($"Deleted cases: {string.Join(", ", caseIds)}");
         }
 
         public ulong? CreateSection(CreateSectionRequest request)
@@ -127,12 +120,21 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
             return result.Payload;
         }
 
-        public IEnumerable<Case> GetCases(ulong projectId, ulong suiteId)
+        private void ValidateRequestResult<T>(RequestResult<T> requestResult)
         {
-            var policy = CreateResultHandlerPolicy<IList<Case>>();
-            var result = policy.Execute(()=> _testRailClient.GetCases(projectId, suiteId));
-            ValidateRequestResult(result);
-            return result.Payload;
+            if (requestResult.StatusCode != HttpStatusCode.OK)
+            {
+                if(!string.IsNullOrEmpty(requestResult.RawJson) &&
+                   requestResult.RawJson.Contains("not a valid test case"))
+                    throw new TestRailNoCaseException("Case not found", requestResult.ThrownException);
+                
+                throw new TestRailException(
+                    $"There is an issue with requesting TestRail: {requestResult.StatusCode.ToString()} " +
+                    $"{Environment.NewLine}{requestResult.RawJson}",
+                    requestResult.ThrownException);
+            }
+
+            Log.Debug($"Requests sent: {++_requestsCount}");
         }
 
         /// <summary>
@@ -142,11 +144,22 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
         /// <param name="caseIds">collection of feature file id's</param>
         public void MoveCases(ulong newSectionId, IEnumerable<ulong> caseIds)
         {
-            var policy = CreateResultHandlerPolicy<Result>();
+            Log.Debug("Moving testcases to new sections.");
+            var policy = CreateResultHandlerPolicy<BaseTestRailType>();
             var result = policy.Execute(()=>
                 _testRailClient.MoveCases(newSectionId, caseIds));
             ValidateRequestResult(result);
             Log.Info($"Moved cases: {string.Join(", ", caseIds)} to section {newSectionId}");
+        }
+
+        public void MoveSection(ulong sectionId, ulong? parentId = null, ulong? afterId = null)
+        {
+            Log.Debug("Moving section");
+            var policy = CreateResultHandlerPolicy<Section>();
+            var result = policy.Execute(()=>
+                _testRailClient.MoveSection(sectionId,parentId,afterId));
+            ValidateRequestResult(result);
+            Log.Info($"Section moved: [{result.Payload.Id}] {result.Payload.Name}");
         }
 
         /// <summary>
@@ -157,10 +170,10 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
         private RetryPolicy<RequestResult<T>> CreateResultHandlerPolicy<T>()
         {
             return Policy.HandleResult<RequestResult<T>>(r=>(int)r.StatusCode < 200 || (int)r.StatusCode > 299)
-                .WaitAndRetry(_attemptsCount, retryAttempt =>
+                .WaitAndRetry(_config.TestRailSettings.RetriesCount, retryAttempt =>
                 {
-                    Log.Debug($"Attempt {retryAttempt} of {_attemptsCount}, waiting for {_sleepDuration} seconds");
-                    return TimeSpan.FromSeconds(_sleepDuration);
+                    Log.Debug($"Attempt {retryAttempt} of {_config.TestRailSettings.RetriesCount}, waiting for {_config.TestRailSettings.PauseBetweenRetriesSeconds} seconds");
+                    return TimeSpan.FromSeconds(_config.TestRailSettings.PauseBetweenRetriesSeconds);
                 });
         }
 

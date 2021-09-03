@@ -1,10 +1,10 @@
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using Newtonsoft.Json.Linq;
 using TestRail.Enums;
 using TestRail.Types;
 using TestRail.Utils;
@@ -669,6 +669,28 @@ namespace TestRail
             return _SendPostCommand<Case>(uri);
         }
 
+        /// <summary>
+        /// Deletes multiple test cases from a project or test suite. This action requires the account to have permissions to delete.
+        /// </summary>
+        /// <param name="projectId">The ID of the project</param>
+        /// <param name="caseIds">Array of caseIds to be moved</param>
+        /// <param name="suiteId">The ID of the suite (Only required if project is in multi-suite mode)</param>
+        /// <param name="soft">Optional parameter. soft=1 will return information about the data which will be deleted, but will not proceed with the deletion.</param>
+        /// <returns>
+        /// Please Note: Deleting test cases cannot be undone and will also delete any associated tests and results in open test runs and test plans.
+        /// </returns>
+        public RequestResult<BaseTestRailType> DeleteCases(ulong projectId, IEnumerable<ulong> caseIds, ulong? suiteId = null, bool? soft = null)
+        {
+            var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i=>i.ToString()))));
+            
+            var optionalSuiteId = suiteId.HasValue ? $"&suite_id={suiteId.Value}" : string.Empty;
+            var optionalSoft = soft.HasValue ? $"&soft={(soft.Value ? 1 : 0)}" : string.Empty;
+            var options = $"{optionalSuiteId}{optionalSoft}";
+
+            var uri = _CreateUri_(CommandType.Delete, CommandAction.Cases, projectId, null, options);
+            return _SendPostCommand<BaseTestRailType>(uri, cases);
+        }
+
         /// <summary>Deletes an existing test plan. This action requires the account to have permissions to delete.</summary>
         /// <param name="planId">The ID of the test plan.</param>
         /// <returns>Please note: Deleting a test plan cannot be undone and also permanently deletes all test runs and results of the test plan.</returns>
@@ -745,13 +767,32 @@ namespace TestRail
         /// <param name="newSectionId">Id of the new section</param>
         /// <param name="caseIds">Array of caseIds to be moved</param>
         /// <returns></returns>
-        public RequestResult<Result> MoveCases(ulong newSectionId, IEnumerable<ulong> caseIds)
+        public RequestResult<BaseTestRailType> MoveCases(ulong newSectionId, IEnumerable<ulong> caseIds)
         {
             var uri = _CreateUri_(CommandType.Move, CommandAction.CasesToSection, newSectionId);
 
             var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i=>i.ToString()))));
 
-            return _SendPostCommand<Result>(uri, cases);
+            return _SendPostCommand<BaseTestRailType>(uri, cases);
+        }
+
+        /// <summary>
+        /// Moves a section to another suite or section. (Requires TestRail 6.5.2 or later)
+        /// </summary>
+        /// <param name="sectionId">The ID of the section.</param>
+        /// <param name="parentId">The ID of the parent section (it can be null if it should be moved to the root). Must be in the same project and suite. May not be direct child of the section being moved.</param>
+        /// <param name="afterId">The section ID after which the section should be put (can be null)</param>
+        /// <returns></returns>
+        public RequestResult<Section> MoveSection(ulong sectionId, ulong? parentId = null, ulong? afterId = null)
+        {
+            var uri = _CreateUri_(CommandType.Move, CommandAction.Section, sectionId);
+
+            var parent = new JProperty("parent_id", parentId);
+            var after = new JProperty("after_id", afterId);
+
+            var newPosition = new JObject {parent, after};
+
+            return _SendPostCommand<Section>(uri, newPosition);
         }
 
         #endregion
@@ -791,11 +832,13 @@ namespace TestRail
         /// <param name="projectId">id of the project</param>
         /// <param name="suiteId">id of the suite</param>
         /// <param name="sectionId">(optional) id of the section</param>
+        /// <param name="templateId">(optional) id of the template</param>
         /// <returns>cases associated with the suite</returns>
-        public RequestResult<IList<Case>> GetCases(ulong projectId, ulong suiteId, ulong? sectionId = null)
+        public RequestResult<IList<Case>> GetCases(ulong projectId, ulong suiteId, ulong? sectionId = null, ulong? templateId = null)
         {
             var optionalSectionId = sectionId.HasValue ? $"&section_id={sectionId.Value}" : string.Empty;
-            var options = $"&suite_id={suiteId}{optionalSectionId}";
+            var optionalTemplateId = templateId.HasValue ? $"&template_id={templateId.Value}" : string.Empty;
+            var options = $"&suite_id={suiteId}{optionalSectionId}{optionalTemplateId}";
             var uri = _CreateUri_(CommandType.Get, CommandAction.Cases, projectId, null, options);
 
             return _SendGetCommand<IList<Case>>(uri);

@@ -12,15 +12,11 @@ namespace GherkinSyncTool.Utils
             File.WriteAllLines(path, featureFileLines);
         }
 
-        internal static void ReplaceLineInTheFile(string path, string oldLine, string newLine)
+        internal static void ReplaceLineInTheFile(string path, int lineNumber, string newLine)
         {
             var featureFileLines = File.ReadAllLines(path).ToList();
-            var index = featureFileLines.FindIndex(s=>s.Contains(oldLine));
-            if(index >= 0)
-            {
-                featureFileLines[index] = featureFileLines[index].Replace(oldLine, newLine);
-                File.WriteAllLines(path, featureFileLines);
-            }
+            featureFileLines[lineNumber] = newLine;
+            File.WriteAllLines(path, featureFileLines);
         }
     }
 }

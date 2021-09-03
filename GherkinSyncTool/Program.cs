@@ -5,6 +5,7 @@ using System.Reflection;
 using Autofac;
 using GherkinSyncTool.DI;
 using GherkinSyncTool.Interfaces;
+using GherkinSyncTool.Models;
 using NLog;
 
 namespace GherkinSyncTool
@@ -12,7 +13,8 @@ namespace GherkinSyncTool
     class Program
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
-          
+        public static string[] CommandLineArguments { get; private set; }
+
         private static int Main(string[] args)
         {
             Log.Info("GherkinSyncTool v.{0}{1}",
@@ -21,22 +23,32 @@ namespace GherkinSyncTool
             
             try
             {
+                CommandLineArguments = args;
+                
                 var builder = new ContainerBuilder();
                 builder.RegisterModule<GherkinSyncToolModule>();
                 var container = builder.Build();
+                
+                var stopwatch = Stopwatch.StartNew();
                 //Parse files
-                var parseFilesStopwatch = Stopwatch.StartNew();
                 List<IFeatureFile> featureFiles = ParseFeatureFiles(container);
                 if (featureFiles.Count == 0)
                 {
                     Log.Info("No files were found for synchronization");
                     return 0;
                 }
-                Log.Info(@$"{featureFiles.Count} file(s) found in {parseFilesStopwatch.Elapsed:mm\:ss\.fff}");
-
+                
                 //Push to sync target system
                 var synchronizer = container.Resolve<ISynchronizer>();
                 synchronizer.Sync(featureFiles);
+                Log.Info(@$"Synchronization finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
+                
+                var context = container.Resolve<Context>();
+                if (!context.IsRunSuccessful)
+                {
+                    Log.Fatal($"GherkinSyncTool did not complete successfully. Please check errors in the log.");
+                    return 1;
+                }
             }
             catch (Exception ex)
             {
@@ -47,15 +59,15 @@ namespace GherkinSyncTool
 
                 return 1;
             }
-
             return 0;
         }
 
         private static List<IFeatureFile> ParseFeatureFiles(IContainer container)
         {
             var featureFilesGrabber = container.Resolve<IFeatureFilesGrabber>();
+            var parseFilesStopwatch = Stopwatch.StartNew();
             var featureFiles = featureFilesGrabber.TakeFiles();
-
+            Log.Info(@$"{featureFiles.Count} file(s) parsed in {parseFilesStopwatch.Elapsed:mm\:ss\.fff}");
             return featureFiles;
         }
     }

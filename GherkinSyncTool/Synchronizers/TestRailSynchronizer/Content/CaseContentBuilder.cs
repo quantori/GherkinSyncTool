@@ -25,9 +25,10 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
                 SectionId = sectionId,
                 CustomFields = new CaseCustomFields
                 {
-                    CustomPreconditions = ConvertToStringPreconditions(scenario, featureFile),
-                    CustomStepsSeparated = ConvertToCustomStepsSeparated(steps),
-                    CustomTags = ConvertToStringTags(scenario, featureFile)
+                    Preconditions = ConvertToStringPreconditions(scenario, featureFile),
+                    StepsSeparated = ConvertToCustomStepsSeparated(steps),
+                    Tags = ConvertToStringTags(scenario, featureFile),
+                    GherkinSyncToolId = _config.TestRailSettings.GherkinSyncToolId
                 },
                 TemplateId = templateId
             };
@@ -103,6 +104,8 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
                 }
             }
 
+            allTags.RemoveAll(tag => tag.Name.Contains(_config.TagIdPrefix));
+
             return allTags.Any() ? string.Join(", ", allTags.Select(tag => tag.Name.Substring(1))) : null;
         }
 
@@ -114,12 +117,12 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
             preconditions.AppendLine($"## {scenario.Keyword}: {scenario.Name}");
             preconditions.AppendLine(scenario.Description);
             
-            var examples = scenario.Examples;
-            if (examples != null && examples.Any())
+            var examples = scenario.Examples.ToList();
+            if (examples.Any())
             {
                 foreach (var example in examples)
                 {
-                    preconditions.AppendLine($"## {example.Name}");
+                    preconditions.AppendLine($"## {example.Keyword}: {example.Name}");
 
                     var tableRows = new List<TableRow> {example.TableHeader};
                     tableRows.AddRange(example.TableBody);
