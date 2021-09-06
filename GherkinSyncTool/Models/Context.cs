@@ -2,6 +2,6 @@
 {
     public class Context
     {
-        public bool IsRunSuccessful { get; set; }
+        public bool IsRunSuccessful { get; set; } = true;
     }
 }

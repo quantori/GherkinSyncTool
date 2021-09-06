@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using GherkinSyncTool.Configuration;
 using GherkinSyncTool.Exceptions;
-using GherkinSyncTool.Interfaces;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client;
 using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Model;
@@ -20,14 +19,14 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
         private readonly GherkynSyncToolConfig _config;
         private List<TestRailSection> _testRailSections;
         private readonly Context _context;
+        private ulong? _archiveSection;
 
         public SectionSynchronizer(TestRailClientWrapper testRailClientWrapper, Context context)
         {
             _config = ConfigurationManager.GetConfiguration();
             _testRailClientWrapper = testRailClientWrapper;
             _context = context;
-            _testRailSections = GetSectionsTree(_config.TestRailSettings.ProjectId, _config.TestRailSettings.SuiteId)
-                .ToList();
+            _testRailSections = GetSectionsTree(_config.TestRailSettings.ProjectId).ToList();
         }
 
         /// <summary>
@@ -46,18 +45,25 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
             return GetOrCreateSectionIdRecursively(_testRailSections, sourceSections, suiteId, projectId);
         }
 
-        public void MoveNotExistingSectionsToArchive(List<IFeatureFile> featureFiles)
+        public void MoveNotExistingSectionsToArchive()
         {
-            var featureFileFolders = GetFeatureFileFolderTree(featureFiles);
+            _archiveSection = _testRailSections.Find(section => section.Name.Equals(_config.TestRailSettings.ArchiveSectionName, StringComparison.InvariantCultureIgnoreCase))?.Id;
+                
+            if (_archiveSection is null)
+            {
+                _archiveSection = _testRailClientWrapper.CreateSection(new CreateSectionRequest(_config.TestRailSettings.ProjectId,null, _config.TestRailSettings.SuiteId, _config.TestRailSettings.ArchiveSectionName));
+            }
+            
+            var featureFileFolders = GetFeatureFileFolderTree();
 
             //Define Roots
             foreach (var testRailSection in _testRailSections)
             {
                 foreach (var featureFileFolder in featureFileFolders)
                 {
-                    if (featureFileFolder.Name == testRailSection.Name)
+                    if (featureFileFolder.Name.Equals(testRailSection.Name, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        MoveSectionToArchiveRecursively(featureFileFolder.ChildFolders, testRailSection.ChildSections);
+                        MoveSectionToArchiveRecursively(featureFileFolder.ChildFolders, testRailSection.ChildSections, _archiveSection.Value);
                     }
                 }
             }
@@ -67,13 +73,9 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
         /// Builds a tree structure for TestRail sections
         /// </summary>
         /// <param name="projectId">TestRail project Id</param>
-        /// <param name="suiteId">TestRail suite Id</param>
         /// <returns></returns>
-        private IEnumerable<TestRailSection> GetSectionsTree(ulong projectId, ulong? suiteId)
+        private IEnumerable<TestRailSection> GetSectionsTree(ulong projectId)
         {
-            if (suiteId is null)
-                throw new ArgumentException($"SuiteId must be specified. Check the TestRail project #{projectId}");
-
             var testRailSectionsDictionary = _testRailClientWrapper
                 .GetSections(projectId)
                 .Select(s => new TestRailSection(s))
@@ -91,22 +93,15 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
         }
 
         private void MoveSectionToArchiveRecursively(List<FeatureFileFolder> featureFileFolders,
-            List<TestRailSection> testRailSections)
+            List<TestRailSection> testRailSections, ulong archiveSection)
         {
-            var archiveSection = _testRailSections.Find(section => section.Name.Equals(_config.TestRailSettings.ArchiveSectionName, StringComparison.InvariantCultureIgnoreCase))?.Id;
-                
-            if (archiveSection is null)
-            {
-                archiveSection = _testRailClientWrapper.CreateSection(new CreateSectionRequest(_config.TestRailSettings.ProjectId,null, _config.TestRailSettings.SuiteId, _config.TestRailSettings.ArchiveSectionName));
-            }
-            
             foreach (var testRailSection in testRailSections)
             {
                 var featureFileFolder = featureFileFolders.Find(fileFolder => fileFolder.Name.Equals(testRailSection.Name, StringComparison.InvariantCultureIgnoreCase));
 
                 if (featureFileFolder is not null)
                 {
-                    MoveSectionToArchiveRecursively(featureFileFolder.ChildFolders, testRailSection.ChildSections);
+                    MoveSectionToArchiveRecursively(featureFileFolder.ChildFolders, testRailSection.ChildSections, archiveSection);
                     continue;
                 }
 
@@ -123,36 +118,30 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
             }
         }
 
-        private List<FeatureFileFolder> GetFeatureFileFolderTree(List<IFeatureFile> featureFiles)
+        private List<FeatureFileFolder> GetFeatureFileFolderTree()
         {
             var result = new List<FeatureFileFolder>();
-            
-            var featureFilesPaths = featureFiles.Select(file => Path.GetDirectoryName(file.RelativePath)).Distinct().ToArray();
-            
-            var featureFileFoldersDictionary = new Dictionary<string, FeatureFileFolder>();
+            var baseDirectory = new DirectoryInfo(_config.BaseDirectory);
+            var children = Directory.GetDirectories(_config.BaseDirectory);
 
-            foreach (var folderPath in featureFilesPaths)
+            var root = new FeatureFileFolder {Name = baseDirectory.Name, ChildFolders = TraverseFolders(children)};
+            result.Add(root);
+            return result;
+        }
+        
+        private static List<FeatureFileFolder> TraverseFolders(string[] children)
+        {
+            var result = new List<FeatureFileFolder>();
+            foreach (var folder in children)
             {
-                var pathSeparated = folderPath.Split(Path.DirectorySeparatorChar);
-                var folderName = pathSeparated.Last();
-                var parentPath = Path.Combine(pathSeparated.SkipLast(1).ToArray());
-                
-                var featureFileFolder = new FeatureFileFolder
+                var directoryInfo = new DirectoryInfo(folder);
+                var subFolders = directoryInfo.GetDirectories();
+                var featureFileFolder = new FeatureFileFolder{Name = directoryInfo.Name};
+                if (subFolders.Length > 0)
                 {
-                    Name = folderName,
-                    ParentFolderPath = parentPath
-                };
-
-                featureFileFoldersDictionary.Add(folderPath, featureFileFolder);
-            }
-
-            foreach (var featureFileFolder in featureFileFoldersDictionary.Values)
-            {
-                if (!string.IsNullOrEmpty(featureFileFolder.ParentFolderPath))
-                {
-                    featureFileFoldersDictionary[featureFileFolder.ParentFolderPath].ChildFolders.Add(featureFileFolder);
+                    featureFileFolder.ChildFolders.AddRange(TraverseFolders(subFolders.Select(s => s.FullName).ToArray()));
                 }
-                else result.Add(featureFileFolder);
+                result.Add(featureFileFolder);
             }
 
             return result;
