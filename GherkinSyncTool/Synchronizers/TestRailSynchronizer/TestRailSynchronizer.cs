@@ -132,15 +132,19 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
         private void DeleteNotExistingScenarios(IList<Case> testRailCases, List<ulong> featureFilesTagIds)
         {
             var testRailTagIds = testRailCases.Where(c => c.Id is not null).Select(c => c.Id.Value);
-            var differentTagIds = testRailTagIds.Except(featureFilesTagIds).ToArray();
+            var tagsToDelete = testRailTagIds.Except(featureFilesTagIds).ToList();
+            if (tagsToDelete.Any())
+            {
+                return;
+            }
             //TODO: asked TestRail support. When parameter soft=1 testcase shouldn't be deleted permanently. 
             try
             {
-                _testRailClientWrapper.DeleteCases(differentTagIds);
+                _testRailClientWrapper.DeleteCases(tagsToDelete);
             }
             catch (TestRailException e)
             {
-                Log.Error(e, $"The cases has not been deleted: {string.Join(", ", differentTagIds)}");
+                Log.Error(e, $"The cases has not been deleted: {string.Join(", ", tagsToDelete)}");
                 _context.IsRunSuccessful = false;
             }
         }
