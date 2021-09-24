@@ -817,7 +817,7 @@ namespace TestRail
         {
             var uri = _CreateUri_(CommandType.Get, CommandAction.Tests, runId);
 
-            return _SendGetCommand<IList<Test>>(uri, CommandAction.Tests);
+            return _SendBulkGetCommand<IList<Test>>(uri, CommandAction.Tests);
         }
 
         /// <summary>gets a case</summary>
@@ -843,7 +843,7 @@ namespace TestRail
             var options = $"&suite_id={suiteId}{optionalSectionId}{optionalTemplateId}";
             var uri = _CreateUri_(CommandType.Get, CommandAction.Cases, projectId, null, options);
 
-            return _SendGetCommand<IList<Case>>(uri, CommandAction.Cases);
+            return _SendBulkGetCommand<IList<Case>>(uri, CommandAction.Cases);
         }
 
         /// <summary>returns a list of available test case custom fields</summary>
@@ -903,7 +903,7 @@ namespace TestRail
             var options = suiteId.HasValue ? $"&suite_id={suiteId}" : string.Empty;
             var uri = _CreateUri_(CommandType.Get, CommandAction.Sections, projectId, null, options);
 
-            return _SendGetCommand<IList<Section>>(uri, CommandAction.Sections);
+            return _SendBulkGetCommand<IList<Section>>(uri, CommandAction.Sections);
         }
 
         /// <summary>gets a run</summary>
@@ -925,7 +925,7 @@ namespace TestRail
             var options = offset > 0 ? $"&offset={offset}" : null;
             var uri = _CreateUri_(CommandType.Get, CommandAction.Runs, projectId, null, options);
 
-            return _SendGetCommand<IList<Run>>(uri, CommandAction.Runs);
+            return _SendBulkGetCommand<IList<Run>>(uri, CommandAction.Runs);
         }
 
         /// <summary>gets a plan</summary>
@@ -945,7 +945,7 @@ namespace TestRail
         {
             var uri = _CreateUri_(CommandType.Get, CommandAction.Plans, projectId);
 
-            return _SendGetCommand<IList<Plan>>(uri, CommandAction.Plans);
+            return _SendBulkGetCommand<IList<Plan>>(uri, CommandAction.Plans);
         }
 
         /// <summary>gets a milestone</summary>
@@ -965,7 +965,7 @@ namespace TestRail
         {
             var uri = _CreateUri_(CommandType.Get, CommandAction.Milestones, projectId);
 
-            return _SendGetCommand<IList<Milestone>>(uri, CommandAction.Milestones);
+            return _SendBulkGetCommand<IList<Milestone>>(uri, CommandAction.Milestones);
         }
 
         /// <summary>gets a project</summary>
@@ -984,7 +984,7 @@ namespace TestRail
         {
             var uri = _CreateUri_(CommandType.Get, CommandAction.Projects);
 
-            return _SendGetCommand<IList<Project>>(uri, CommandAction.Projects);
+            return _SendBulkGetCommand<IList<Project>>(uri, CommandAction.Projects);
         }
 
         /// <summary>Get User for user id</summary>
@@ -1045,7 +1045,7 @@ namespace TestRail
 
             var uri = _CreateUri_(CommandType.Get, CommandAction.Results, testId, null, filters.ToString());
 
-            return _SendGetCommand<IList<Result>>(uri, CommandAction.Results);
+            return _SendBulkGetCommand<IList<Result>>(uri, CommandAction.Results);
         }
 
         /// <summary>Return the list of test results for a test run and the case combination</summary>
@@ -1076,7 +1076,7 @@ namespace TestRail
 
             var uri = _CreateUri_(CommandType.Get, CommandAction.ResultsForCase, runId, caseId, filters.ToString());
 
-            return _SendGetCommand<IList<Result>>(uri, CommandAction.Results);
+            return _SendBulkGetCommand<IList<Result>>(uri, CommandAction.Results);
         }
 
         /// <summary>Return the list of test results for a test run</summary>
@@ -1106,7 +1106,7 @@ namespace TestRail
 
             var uri = _CreateUri_(CommandType.Get, CommandAction.ResultsForRun, runId, null, filters.ToString());
 
-            return _SendGetCommand<IList<Result>>(uri, CommandAction.Results);
+            return _SendBulkGetCommand<IList<Result>>(uri, CommandAction.Results);
         }
 
         /// <summary>Returns the list of statuses available to test rail</summary>
@@ -1185,7 +1185,7 @@ namespace TestRail
         /// <param name="uri">The endpoint to send the request to.</param>
         /// <param name="type">The type of the JSON Bulk Property to look for (e.g. cases, projects, etc.)</param>
         /// <returns>The List result of the request.</returns>
-        private RequestResult<T> _SendGetCommand<T>(string uri, CommandAction type)
+        private RequestResult<T> _SendBulkGetCommand<T>(string uri, CommandAction type)
         {
             var strType = type.ToString().ToLower();
             var temp = _SendGetCommand<BulkAPI>(uri);
