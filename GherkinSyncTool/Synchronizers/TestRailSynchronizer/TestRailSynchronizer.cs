@@ -137,7 +137,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
             {
                 return;
             }
-            //TODO: asked TestRail support. When parameter soft=1 testcase shouldn't be deleted permanently. 
+            
             try
             {
                 _testRailClientWrapper.DeleteCases(tagsToDelete);
