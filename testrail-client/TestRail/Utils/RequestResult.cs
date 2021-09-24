@@ -31,7 +31,8 @@ namespace TestRail.Utils
         /// <param name="status">The type response code returned.</param>
         /// <param name="rawJson">The raw JSON to deserialize.</param>
         /// <param name="thrownException">The exception that was throw when the response was received.</param>
-        public RequestResult(HttpStatusCode status, string rawJson = null, Exception thrownException = null)
+        /// <param name="payload">The payload to pass if already existing</param>
+        public RequestResult(HttpStatusCode status, string rawJson = null, Exception thrownException = null, T payload = default(T))
         {
             RawJson = rawJson;
             StatusCode = status;
@@ -71,6 +72,11 @@ namespace TestRail.Utils
                     }
                 }
             }
+            else
+            {
+                Payload = payload;
+            }
+                
         }
     }
 }

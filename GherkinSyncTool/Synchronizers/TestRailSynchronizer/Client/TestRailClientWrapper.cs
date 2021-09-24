@@ -82,8 +82,9 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
             return gherkinToolCases.ToList();
         }
         
-        public void DeleteCases(IEnumerable<ulong> caseIds)
+        public void DeleteCases(List<ulong> caseIds)
         {
+            if(!caseIds.Any()) return;
             Log.Debug("Deleting scenarios which are not exist.");
             var policy = CreateResultHandlerPolicy<BaseTestRailType>();
             var cases = policy.Execute(()=>
