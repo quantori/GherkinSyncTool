@@ -133,7 +133,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
         {
             var testRailTagIds = testRailCases.Where(c => c.Id is not null).Select(c => c.Id.Value);
             var tagsToDelete = testRailTagIds.Except(featureFilesTagIds).ToList();
-            if (tagsToDelete.Any())
+            if (!tagsToDelete.Any())
             {
                 return;
             }
