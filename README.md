@@ -6,6 +6,8 @@ Quantori GherkinSyncTool is an open-source console application that synchronizes
 in [Gherkin syntax](https://cucumber.io/docs/gherkin/) (also known as feature files) with a test management system or
 any other destination.
 
+![image](https://user-images.githubusercontent.com/24970976/135101818-fbf2dce8-0421-427d-97c5-49a42c5f4c58.png)
+
 ## Supported test management systems
 
 - TestRail
