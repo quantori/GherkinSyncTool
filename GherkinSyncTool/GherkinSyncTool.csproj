@@ -4,6 +4,7 @@
         <AssemblyVersion>2.0.0</AssemblyVersion>
         <OutputType>Exe</OutputType>
         <TargetFramework>net5.0</TargetFramework>
+        <PackAsTool>true</PackAsTool>
     </PropertyGroup>
 
     <ItemGroup>
