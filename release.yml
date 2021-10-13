@@ -1,0 +1,102 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'release/*'
+
+jobs:
+  build_release:
+    name: build_release
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_NOLOGO: true
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '5.0.x'
+      - name: Build win64
+        run: dotnet publish GherkinSyncTool/GherkinSyncTool.csproj -c Release -r win-x64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:PublishTrimmed=true  --self-contained true -f net5.0 -o bin/GherkinSyncTool-win-x64/
+      - name: Archive win64
+        uses: thedoctor0/zip-release@master
+        with:
+          type: 'zip'
+          directory: 'bin/'
+          path: 'GherkinSyncTool-win-x64'
+          filename: '../GherkinSyncTool-win-x64.exe.zip'
+          exclusions: '*.pdb *TestRail*'
+      - name: Build linux64
+        run: dotnet publish GherkinSyncTool/GherkinSyncTool.csproj -c Release -r linux-x64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:PublishTrimmed=true  --self-contained true -f net5.0 -o bin/GherkinSyncTool-linux-x64/
+      - name: Archive linux64
+        uses: thedoctor0/zip-release@master
+        with:
+          type: 'tar'
+          directory: 'bin/'
+          path: 'GherkinSyncTool-linux-x64/*'
+          filename: '../GherkinSyncTool-linux-x64.tar.gz'
+          exclusions: '*.pdb --exclude=*TestRail*'
+      - name: Build osx
+        run: dotnet publish GherkinSyncTool/GherkinSyncTool.csproj -c Release -r osx-x64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:PublishTrimmed=true  --self-contained true -f net5.0 -o bin/GherkinSyncTool-osx-x64/
+      - name: Archive osx64
+        uses: thedoctor0/zip-release@master
+        with:
+          type: 'tar'
+          directory: 'bin/'
+          path: 'GherkinSyncTool-osx-x64/*'
+          filename: '../GherkinSyncTool-osx-x64.tar.gz'
+          exclusions: '*.pdb --exclude=*TestRail*'
+      - name: Get release version
+        run: echo "::set-output name=version::$(bin/GherkinSyncTool-linux-x64/GherkinSyncTool --version || true)"
+        id: version
+      - name: Get dotnet tool version
+        run: |
+              export VER=$(grep -oP '\d+\.\d+\.\d+(?=</AssemblyVersion>)' GherkinSyncTool/GherkinSyncTool.csproj)
+              echo "VER=$VER" >> $GITHUB_ENV
+      - name: Build dotnet tool
+        run: dotnet pack GherkinSyncTool/GherkinSyncTool.csproj --output ./ -c Release -p:Version=${{ env.VER }}
+      - name: publish dotnet tool
+        env:
+          NUGET_API_KEY: ${{ secrets.QUANTORI_NUGET_API_KEY }}
+        run: dotnet nuget push GherkinSyncTool.${{ env.VER }}.nupkg -s "https://api.nuget.org/v3/index.json" -k "$NUGET_API_KEY" --skip-duplicate
+      - name: Create release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: ${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref }}
+          body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Upload windows artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./GherkinSyncTool-win-x64.exe.zip
+          asset_name: GherkinSyncTool-win-x64.exe.zip
+          asset_content_type: application/zip
+      - name: Upload linux artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: './GherkinSyncTool-linux-x64.tar.gz'
+          asset_name: GherkinSyncTool-linux-x64.tar.gz
+          asset_content_type: application/zip
+      - name: Upload osx artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: './GherkinSyncTool-osx-x64.tar.gz'
+          asset_name: GherkinSyncTool-osx-x64.tar.gz
+          asset_content_type: application/zip
