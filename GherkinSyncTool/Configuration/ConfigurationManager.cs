@@ -6,13 +6,13 @@ namespace GherkinSyncTool.Configuration
 {
     public static class ConfigurationManager
     {
-        private static GherkynSyncToolConfig _configurationModel;
+        private static GherkinSyncToolConfig _configurationModel;
 
-        public static GherkynSyncToolConfig GetConfiguration()
+        public static GherkinSyncToolConfig GetConfiguration()
         {
             if (_configurationModel == null)
             {
-                var config = GetIConfiguration().Get<GherkynSyncToolConfig>();
+                var config = GetIConfiguration().Get<GherkinSyncToolConfig>();
                 ValidateConfig(config);
 
                 _configurationModel = config;
@@ -21,13 +21,13 @@ namespace GherkinSyncTool.Configuration
             return _configurationModel;
         }
 
-        private static void ValidateConfig(GherkynSyncToolConfig config)
+        private static void ValidateConfig(GherkinSyncToolConfig config)
         {
             ValidateBaseDirectory(config);
             ValidateTestRailSettings(config);
         }
 
-        private static void ValidateTestRailSettings(GherkynSyncToolConfig config)
+        private static void ValidateTestRailSettings(GherkinSyncToolConfig config)
         {
             if (config.TestRailSettings.RetriesCount < 0)
                 throw new ArgumentException("Retries count must be a positive number. Please, check configuration.");
@@ -75,7 +75,7 @@ namespace GherkinSyncTool.Configuration
             }
         }
 
-        private static void ValidateBaseDirectory(GherkynSyncToolConfig config)
+        private static void ValidateBaseDirectory(GherkinSyncToolConfig config)
         {
             var baseDirectory = config.BaseDirectory;
             if (string.IsNullOrEmpty(baseDirectory))

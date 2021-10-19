@@ -20,7 +20,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Client
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
         private readonly TestRailClient _testRailClient;
-        private readonly GherkynSyncToolConfig _config = ConfigurationManager.GetConfiguration();
+        private readonly GherkinSyncToolConfig _config = ConfigurationManager.GetConfiguration();
         private int _requestsCount;
 
         public TestRailClientWrapper()

@@ -23,8 +23,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
         private readonly TestRailClientWrapper _testRailClientWrapper;
         private readonly CaseContentBuilder _caseContentBuilder;
         private readonly SectionSynchronizer _sectionSynchronizer;
-        private readonly GherkynSyncToolConfig _config = ConfigurationManager.GetConfiguration();
-        private readonly string _tagIndentation;
+        private readonly GherkinSyncToolConfig _config = ConfigurationManager.GetConfiguration();
         private readonly Context _context;
 
         public TestRailSynchronizer(TestRailClientWrapper testRailClientWrapper, CaseContentBuilder caseContentBuilder,
@@ -34,7 +33,6 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
             _caseContentBuilder = caseContentBuilder;
             _sectionSynchronizer = sectionSynchronizer;
             _context = context;
-            _tagIndentation = new string(' ', _config.FormattingSettings.TagIndentation);
         }
 
         public void Sync(List<IFeatureFile> featureFiles)
@@ -55,7 +53,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
 
                     var caseRequest = _caseContentBuilder.BuildCaseRequest(scenario, featureFile, featureFileSectionId);
 
-                    // Create test case for feature file that first time sync with TestRail, no tag id present.  
+                    // Create test case for feature file that first time sync, no tag id present.  
                     if (tagId is null)
                     {
                         Case addCaseResponse;
@@ -71,7 +69,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
                         } 
                         
                         var lineNumberToInsert = scenario.Location.Line - 1 + insertedTagIds;
-                        var formattedTagId = _tagIndentation + _config.TagIdPrefix + addCaseResponse.Id;
+                        var formattedTagId = _config.FormattingSettings.TagIndentation + _config.TagIdPrefix + addCaseResponse.Id;
                         TextFilesEditMethods.InsertLineToTheFile(featureFile.AbsolutePath, lineNumberToInsert,
                             formattedTagId);
                         insertedTagIds++;
@@ -97,7 +95,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer
                                 _context.IsRunSuccessful = false;
                                 continue;
                             }
-                            var formattedTagId = _tagIndentation + _config.TagIdPrefix + testRailCase.Id;
+                            var formattedTagId = _config.FormattingSettings.TagIndentation + _config.TagIdPrefix + testRailCase.Id;
                             TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath,
                                 tagId.Location.Line - 1 + insertedTagIds, formattedTagId);
                         }

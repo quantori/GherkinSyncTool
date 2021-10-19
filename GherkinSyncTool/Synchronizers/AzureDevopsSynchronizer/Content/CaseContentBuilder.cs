@@ -5,34 +5,47 @@ using System.Text;
 using Gherkin.Ast;
 using GherkinSyncTool.Configuration;
 using GherkinSyncTool.Interfaces;
-using GherkinSyncTool.Synchronizers.TestRailSynchronizer.Model;
+using GherkinSyncTool.Synchronizers.AzureDevopsSynchronizer.Model;
+using Microsoft.VisualStudio.Services.WebApi.Patch;
+using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
 
-namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
+namespace GherkinSyncTool.Synchronizers.AzureDevopsSynchronizer.Content
 {
     public class CaseContentBuilder
     {
         private readonly GherkinSyncToolConfig _config = ConfigurationManager.GetConfiguration();
 
-        public CaseRequest BuildCaseRequest(Scenario scenario, IFeatureFile featureFile, ulong sectionId)
+        public JsonPatchDocument BuildTestCaseDocument(Scenario scenario, IFeatureFile featureFile, int id)
         {
             var steps = GetSteps(scenario, featureFile);
-
-            var templateId = _config.TestRailSettings.TemplateId;
-
-            var createCaseRequest = new CaseRequest
-            {
-                Title = scenario.Name,
-                SectionId = sectionId,
-                CustomFields = new CaseCustomFields
+            JsonPatchDocument patchDocument = new JsonPatchDocument();
+            
+            patchDocument.Add(
+                new JsonPatchOperation
                 {
-                    Preconditions = ConvertToStringPreconditions(scenario, featureFile),
-                    StepsSeparated = ConvertToCustomStepsSeparated(steps),
-                    Tags = ConvertToStringTags(scenario, featureFile),
-                    GherkinSyncToolId = _config.TestRailSettings.GherkinSyncToolId
-                },
-                TemplateId = templateId
-            };
-            return createCaseRequest;
+                    Operation = Operation.Add,
+                    Path = "/fields/" + WorkItemFields.Title,
+                    Value = scenario.Name
+                }
+            );
+            patchDocument.Add(
+                new JsonPatchOperation
+                {
+                    Operation = Operation.Add,
+                    Path = "/fields/" + WorkItemFields.Description,
+                    Value = featureFile.RelativePath
+                }
+            );
+            patchDocument.Add(
+                new JsonPatchOperation
+                {
+                    Operation = Operation.Add,
+                    Path = "/" + WorkItemFields.Id,
+                    Value = id
+                }
+            );
+            
+            return patchDocument;
         }
 
         private List<string> GetSteps(Scenario scenario, IFeatureFile featureFile)
@@ -72,10 +85,6 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
             return resultSteps;
         }
 
-        private List<CustomStepsSeparated> ConvertToCustomStepsSeparated(List<string> steps)
-        {
-            return steps.Select(step => new CustomStepsSeparated {Content = step}).ToList();
-        }
 
         private string ConvertToStringTags(Scenario scenario, IFeatureFile featureFile)
         {

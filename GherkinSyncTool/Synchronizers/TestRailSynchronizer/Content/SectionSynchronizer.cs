@@ -16,7 +16,7 @@ namespace GherkinSyncTool.Synchronizers.TestRailSynchronizer.Content
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
         private readonly TestRailClientWrapper _testRailClientWrapper;
-        private readonly GherkynSyncToolConfig _config;
+        private readonly GherkinSyncToolConfig _config;
         private List<TestRailSection> _testRailSections;
         private readonly Context _context;
         private ulong? _archiveSection;

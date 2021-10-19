@@ -1,6 +1,8 @@
-﻿namespace GherkinSyncTool.Configuration
+﻿using System;
+
+namespace GherkinSyncTool.Configuration
 {
-    public class GherkynSyncToolConfig
+    public class GherkinSyncToolConfig
     {
         public string BaseDirectory { get; set; }
         public string TagIdPrefix { get; set; } = "@tc:";
@@ -24,6 +26,12 @@
 
     public class FormattingSettings
     {
-        public int TagIndentation { get; set; } = 2;
+        private int _tagIndentation = 2;
+
+        public string TagIndentation
+        {
+            get => new(' ', _tagIndentation);
+            set => _tagIndentation = Convert.ToInt32(value);
+        }
     }
 }
