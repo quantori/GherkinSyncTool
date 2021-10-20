@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using GherkinSyncTool.Configuration;
-using GherkinSyncTool.Interfaces;
+using GherkinSyncTool.Models;
+using GherkinSyncTool.Models.Configuration;
 using NLog;
 
 namespace GherkinSyncTool.FeatureParser
@@ -19,7 +19,7 @@ namespace GherkinSyncTool.FeatureParser
 
         public List<IFeatureFile> TakeFiles()
         {
-            var config = ConfigurationManager.GetConfiguration();
+            var config = ConfigurationManager.GetConfiguration<GherkinSyncToolConfig>();
             var baseDirectory = config.BaseDirectory;
             var gherkinFilePaths = Directory.EnumerateFiles(baseDirectory, "*.feature",
                 SearchOption.AllDirectories);

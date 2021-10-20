@@ -4,8 +4,8 @@ using System.Diagnostics;
 using System.Reflection;
 using Autofac;
 using GherkinSyncTool.DI;
-using GherkinSyncTool.Interfaces;
 using GherkinSyncTool.Models;
+using GherkinSyncTool.Models.Configuration;
 using NLog;
 
 namespace GherkinSyncTool
@@ -13,8 +13,7 @@ namespace GherkinSyncTool
     class Program
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
-        public static string[] CommandLineArguments { get; private set; }
-
+        
         private static int Main(string[] args)
         {
             Log.Info("GherkinSyncTool v.{0}{1}",
@@ -23,8 +22,8 @@ namespace GherkinSyncTool
             
             try
             {
-                CommandLineArguments = args;
-                
+                ConfigurationManager.InitConfiguration(args);
+        
                 var builder = new ContainerBuilder();
                 builder.RegisterModule<GherkinSyncToolModule>();
                 var container = builder.Build();
