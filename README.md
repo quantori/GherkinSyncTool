@@ -32,12 +32,12 @@ dotnet .\.\GherkinSyncTool\bin\Debug\net5.0\GherkinSyncTool.dll
 TestRail's API should be enabled. In order for the tool to work correctly, the TestRail test template should have the custom fields that are presented in the table
 below. The template should not contain any required fields. An existing template can be used or a new one created.
 
-| System Name          | Type        |
-| -------------------- | ----------- |
-| `preconds`           | Text type   |
-| `steps_separated`    | Step type   |
-| `tags`               | String type |
-| 'gherkinsynctool_id' | String      |
+| System Name          | Type   |
+| -------------------- | ------ |
+| `preconds`           | Text   |
+| `steps_separated`    | Step   |
+| `tags`               | String |
+| 'gherkinsynctool_id' | String |
 
 ## Configuration
 
