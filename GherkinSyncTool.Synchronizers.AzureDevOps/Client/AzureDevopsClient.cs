@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using GherkinSyncTool.Models;
+using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Model;
 using Microsoft.TeamFoundation.WorkItemTracking.WebApi;
 using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
@@ -16,16 +17,14 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
     public class AzureDevopsClient
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
-        private readonly string _uri = "https://dev.azure.com/GherkinSyncTool";
-        private readonly string _personalAccessToken = "m7ek4hcv6m43qwrho7xj2ibs42xzfgjh3tarcw3xrho737zztjuq";
-        private readonly string _project = "Test project";
+        private readonly AzureDevopsSettings _azureDevopsSettings = ConfigurationManager.GetConfiguration<AzureDevopsConfigs>().AzureDevopsSettings;
         private readonly VssConnection _connection;
         private readonly Context _context;
 
         public AzureDevopsClient(Context context)
         {
-            Uri uri = new Uri(_uri);
-            string personalAccessToken = _personalAccessToken;
+            Uri uri = new Uri(_azureDevopsSettings.BaseUrl);
+            string personalAccessToken = _azureDevopsSettings.PersonalAccessToken;
             _connection = new VssConnection(uri, new VssBasicCredential(string.Empty, personalAccessToken));
             _context = context;
         }
@@ -33,7 +32,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
         public WitBatchRequest CreateTestCaseBatchRequest(JsonPatchDocument patchDocument)
         {
             var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
-            return workItemTrackingHttpClient.CreateWorkItemBatchRequest(_project, WorkItemTypes.TestCase, patchDocument, false, false);
+            return workItemTrackingHttpClient.CreateWorkItemBatchRequest(_azureDevopsSettings.Project, WorkItemTypes.TestCase, patchDocument, false, false);
         }
 
         public WitBatchRequest UpdateTestCaseBatchRequest(int id, JsonPatchDocument patchDocument)

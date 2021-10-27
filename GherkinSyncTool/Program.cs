@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Autofac;
+using CommandLine;
+using GherkinSyncTool.CliOptions;
 using GherkinSyncTool.DI;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
+using GherkinSyncTool.Synchronizers.AzureDevOps;
+using GherkinSyncTool.Synchronizers.TestRail;
 using NLog;
 
 namespace GherkinSyncTool
@@ -13,20 +18,23 @@ namespace GherkinSyncTool
     class Program
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
+        static readonly ContainerBuilder ContainerBuilder = new();
         
         private static int Main(string[] args)
         {
             Log.Info("GherkinSyncTool v.{0}{1}",
                 Assembly.GetExecutingAssembly().GetName().Version,
                 Environment.NewLine);
-            
             try
             {
+                Parser.Default.ParseArguments(args, LoadCliVerbsTypes())
+                    .WithParsed(RegisterSynchronizer)
+                    .WithNotParsed(_ => Environment.Exit(1));
+
                 ConfigurationManager.InitConfiguration(args);
-        
-                var builder = new ContainerBuilder();
-                builder.RegisterModule<GherkinSyncToolModule>();
-                var container = builder.Build();
+                
+                ContainerBuilder.RegisterModule<GherkinSyncToolModule>();
+                var container = ContainerBuilder.Build();
                 
                 var stopwatch = Stopwatch.StartNew();
                 //Parse files
@@ -61,6 +69,19 @@ namespace GherkinSyncTool
             return 0;
         }
 
+        private static void RegisterSynchronizer(object obj)
+        {
+            switch (obj)
+            {
+                case TestRailOptions o:
+                    ContainerBuilder.RegisterType<TestRailSynchronizer>().As<ISynchronizer>().SingleInstance();
+                    break;
+                case AzureDevOpsOptions o:
+                    ContainerBuilder.RegisterType<AzureDevopsSynchronizer>().As<ISynchronizer>().SingleInstance();
+                    break;
+            }
+        }
+
         private static List<IFeatureFile> ParseFeatureFiles(IContainer container)
         {
             var featureFilesGrabber = container.Resolve<IFeatureFilesGrabber>();
@@ -68,6 +89,12 @@ namespace GherkinSyncTool
             var featureFiles = featureFilesGrabber.TakeFiles();
             Log.Info(@$"{featureFiles.Count} file(s) parsed in {parseFilesStopwatch.Elapsed:mm\:ss\.fff}");
             return featureFiles;
+        }
+        
+        private	static Type[] LoadCliVerbsTypes()
+        {
+            return Assembly.GetExecutingAssembly().GetTypes()
+                .Where(t => t.GetCustomAttribute<VerbAttribute>() != null).ToArray();		 
         }
     }
 }
