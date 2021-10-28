@@ -5,12 +5,13 @@ using System.Linq;
 using System.Reflection;
 using Autofac;
 using CommandLine;
-using GherkinSyncTool.CliOptions;
 using GherkinSyncTool.DI;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Synchronizers.AzureDevOps;
+using GherkinSyncTool.Synchronizers.AzureDevOps.Model;
 using GherkinSyncTool.Synchronizers.TestRail;
+using GherkinSyncTool.Synchronizers.TestRail.Model;
 using NLog;
 
 namespace GherkinSyncTool
@@ -27,12 +28,11 @@ namespace GherkinSyncTool
                 Environment.NewLine);
             try
             {
+                ConfigurationManager.InitConfiguration(args);
                 Parser.Default.ParseArguments(args, LoadCliVerbsTypes())
                     .WithParsed(RegisterSynchronizer)
                     .WithNotParsed(_ => Environment.Exit(1));
 
-                ConfigurationManager.InitConfiguration(args);
-                
                 ContainerBuilder.RegisterModule<GherkinSyncToolModule>();
                 var container = ContainerBuilder.Build();
                 
@@ -45,7 +45,7 @@ namespace GherkinSyncTool
                     return 0;
                 }
                 
-                //Push to sync target system
+                //Start sync process with a target system
                 var synchronizer = container.Resolve<ISynchronizer>();
                 synchronizer.Sync(featureFiles);
                 Log.Info(@$"Synchronization finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
@@ -71,14 +71,21 @@ namespace GherkinSyncTool
 
         private static void RegisterSynchronizer(object obj)
         {
-            switch (obj)
+            var configurationSections = ConfigurationManager.Config.GetChildren();
+            if (configurationSections is null) throw new ArgumentException("Please, init configuration");
+
+            foreach (var section in configurationSections)
             {
-                case TestRailOptions o:
+                if(section.Key.Contains(nameof(TestRailSettings)))
+                {
                     ContainerBuilder.RegisterType<TestRailSynchronizer>().As<ISynchronizer>().SingleInstance();
                     break;
-                case AzureDevOpsOptions o:
+                }
+                if(section.Key.Contains(nameof(AzureDevopsSettings)))
+                {
                     ContainerBuilder.RegisterType<AzureDevopsSynchronizer>().As<ISynchronizer>().SingleInstance();
                     break;
+                }
             }
         }
 
