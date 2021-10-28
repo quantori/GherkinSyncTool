@@ -683,8 +683,8 @@ namespace TestRail
         /// </returns>
         public RequestResult<BaseTestRailType> DeleteCases(ulong projectId, IEnumerable<ulong> caseIds, ulong? suiteId = null, bool? soft = null)
         {
-            var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i=>i.ToString()))));
-            
+            var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i => i.ToString()))));
+
             var optionalSuiteId = suiteId.HasValue ? $"&suite_id={suiteId.Value}" : string.Empty;
             var optionalSoft = soft.HasValue ? $"&soft={(soft.Value ? 1 : 0)}" : string.Empty;
             var options = $"{optionalSuiteId}{optionalSoft}";
@@ -773,7 +773,7 @@ namespace TestRail
         {
             var uri = _CreateUri_(CommandType.Move, CommandAction.CasesToSection, newSectionId);
 
-            var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i=>i.ToString()))));
+            var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i => i.ToString()))));
 
             return _SendPostCommand<BaseTestRailType>(uri, cases);
         }
@@ -792,7 +792,7 @@ namespace TestRail
             var parent = new JProperty("parent_id", parentId);
             var after = new JProperty("after_id", afterId);
 
-            var newPosition = new JObject {parent, after};
+            var newPosition = new JObject { parent, after };
 
             return _SendPostCommand<Section>(uri, newPosition);
         }
@@ -1187,21 +1187,35 @@ namespace TestRail
         /// <returns>The List result of the request.</returns>
         private RequestResult<T> _SendBulkGetCommand<T>(string uri, CommandAction type)
         {
+
             var strType = type.ToString().ToLower();
             var temp = _SendGetCommand<BulkAPI>(uri);
-            var list = WrappedList<T>(temp.Payload.DataItems[strType].ToString());
-
-            while (temp.Payload._Links.Next != null)
+            try
             {
-                temp = _SendGetCommand<BulkAPI>($"?{temp.Payload._Links.Next}");
-                var additionalList = WrappedList<T>(temp.Payload.DataItems[strType].ToString());
-                foreach (var item in additionalList)
+                var list = WrappedList<T>(temp.Payload.DataItems[strType].ToString());
+                while (temp.Payload._Links.Next != null)
                 {
-                    list.Add(item);
+                    temp = _SendGetCommand<BulkAPI>($"?{temp.Payload._Links.Next}");
+                    var additionalList = WrappedList<T>(temp.Payload.DataItems[strType].ToString());
+                    foreach (var item in additionalList)
+                    {
+                        list.Add(item);
+                    }
                 }
+
+
+                return new RequestResult<T>(temp.StatusCode, thrownException: temp.ThrownException,
+                    payload: (T)list);
             }
 
-            return new RequestResult<T>(temp.StatusCode, thrownException: temp.ThrownException, payload: (T)list);
+            catch (NullReferenceException)
+            {
+                var errorText = temp.RawJson
+                    .Replace("{\"error\":\"", string.Empty)
+                    .Replace("\"}", string.Empty);
+
+                throw new ArgumentException($"\n{errorText}\r\n\n");
+            }
         }
 
         private IList WrappedList<T>(string unwrappedJson)
@@ -1239,7 +1253,7 @@ namespace TestRail
             // with the corresponding response code
             catch (WebException ex)
             {
-                var response = (HttpWebResponse) ex.Response;
+                var response = (HttpWebResponse)ex.Response;
                 using (var reader = new StreamReader(response.GetResponseStream() ?? Stream.Null))
                 {
                     var json = reader.ReadToEnd();

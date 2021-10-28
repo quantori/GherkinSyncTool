@@ -6,6 +6,7 @@ using GherkinSyncTool.Synchronizers.AzureDevOps.Client;
 using GherkinSyncTool.Synchronizers.TestRail;
 using GherkinSyncTool.Synchronizers.TestRail.Client;
 using GherkinSyncTool.Synchronizers.TestRail.Content;
+using GherkinSyncTool.Synchronizers.TestRail.Utils;
 
 namespace GherkinSyncTool.DI
 {
@@ -20,6 +21,7 @@ namespace GherkinSyncTool.DI
             builder.RegisterType<TestRailClientWrapper>().SingleInstance();
             builder.RegisterType<SectionSynchronizer>().SingleInstance();
             builder.RegisterType<CaseContentBuilder>().SingleInstance();
+            builder.RegisterType<CustomFieldsChecker>().SingleInstance();
             //TODO:
             builder.RegisterType<GherkinSyncTool.Synchronizers.AzureDevOps.Content.CaseContentBuilder>().SingleInstance();
             builder.RegisterType<Context>().SingleInstance();
