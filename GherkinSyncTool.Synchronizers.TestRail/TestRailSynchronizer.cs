@@ -52,7 +52,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
 
                     var caseRequest = _caseContentBuilder.BuildCaseRequest(scenario, featureFile, featureFileSectionId);
 
-                    // Create test case for feature file that first time sync, no tag id present.  
+                    // Create test case for feature file which is getting synced for the first time, so no tag id present.  
                     if (tagId is null)
                     {
                         Case addCaseResponse;
