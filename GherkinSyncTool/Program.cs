@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Autofac;
+using Autofac.Core;
 using CommandLine;
 using GherkinSyncTool.DI;
 using GherkinSyncTool.Models;
@@ -46,6 +47,10 @@ namespace GherkinSyncTool
                 }
                 
                 //Start sync process with a target system
+                if (!container.IsRegistered<ISynchronizer>())
+                {
+                    throw new DependencyResolutionException($"{nameof(ISynchronizer)} is not registered");
+                }
                 var synchronizer = container.Resolve<ISynchronizer>();
                 synchronizer.Sync(featureFiles);
                 Log.Info(@$"Synchronization finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
@@ -91,6 +96,10 @@ namespace GherkinSyncTool
 
         private static List<IFeatureFile> ParseFeatureFiles(IContainer container)
         {
+            if (!container.IsRegistered<IFeatureFilesGrabber>())
+            {
+                throw new DependencyResolutionException($"{nameof(IFeatureFilesGrabber)} is not registered");
+            }
             var featureFilesGrabber = container.Resolve<IFeatureFilesGrabber>();
             var parseFilesStopwatch = Stopwatch.StartNew();
             var featureFiles = featureFilesGrabber.TakeFiles();

@@ -43,7 +43,9 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
 
         public List<WorkItem> ExecuteWorkItemBatch(List<WitBatchRequest> request)
         {
+            //Azure DevOps batch request limitation
             const int batchRequestLimit = 200;
+            
             var result = new List<WorkItem>();
             
             if (request.Count > batchRequestLimit)

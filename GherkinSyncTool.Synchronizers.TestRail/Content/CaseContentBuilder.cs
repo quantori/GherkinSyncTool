@@ -55,7 +55,10 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
             List<string> resultSteps = new List<string>();
             foreach (var step in steps)
             {
-                var fullStep = $"**{step.Keyword.Trim()}** " + step.Text.Replace("<","***").Replace(">","***");
+                var keywordFormatted = $"__{step.Keyword.Trim()}__ ";
+                var stepFormatted = step.Text.Replace("<","___").Replace(">","___");
+                
+                var fullStep = keywordFormatted + stepFormatted;
                 
                 if (step.Argument is DocString docString)
                 {

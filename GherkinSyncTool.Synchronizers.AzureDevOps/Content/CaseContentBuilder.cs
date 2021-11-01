@@ -24,7 +24,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 new JsonPatchOperation
                 {
                     Operation = Operation.Add,
-                    Path = "/fields/" + WorkItemFields.Title,
+                    Path = $"/fields/{WorkItemFields.Title}",
                     Value = scenario.Name
                 }
             );
@@ -32,7 +32,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 new JsonPatchOperation
                 {
                     Operation = Operation.Add,
-                    Path = "/fields/" + WorkItemFields.Description,
+                    Path = $"/fields/{WorkItemFields.Description}",
                     Value = featureFile.RelativePath
                 }
             );
@@ -40,7 +40,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 new JsonPatchOperation
                 {
                     Operation = Operation.Add,
-                    Path = "/" + WorkItemFields.Id,
+                    Path = $"/{WorkItemFields.Id}",
                     Value = id
                 }
             );

@@ -1,9 +1,8 @@
 ﻿using Autofac;
 using GherkinSyncTool.FeatureParser;
 using GherkinSyncTool.Models;
-using GherkinSyncTool.Synchronizers.AzureDevOps.Client;
-using GherkinSyncTool.Synchronizers.TestRail.Client;
-using GherkinSyncTool.Synchronizers.TestRail.Content;
+using GherkinSyncTool.Synchronizers.AzureDevOps;
+using GherkinSyncTool.Synchronizers.TestRail;
 
 namespace GherkinSyncTool.DI
 {
@@ -13,13 +12,9 @@ namespace GherkinSyncTool.DI
         {
             builder.RegisterType<FeatureFilesGrabber>().As<IFeatureFilesGrabber>().SingleInstance();
             builder.RegisterType<FeatureParser.FeatureParser>().SingleInstance();
-            builder.RegisterType<TestRailClientWrapper>().SingleInstance();
-            builder.RegisterType<SectionSynchronizer>().SingleInstance();
-            builder.RegisterType<CaseContentBuilder>().SingleInstance();
-            //TODO: move to the AzureDevOps project
-            builder.RegisterType<Synchronizers.AzureDevOps.Content.CaseContentBuilder>().SingleInstance();
             builder.RegisterType<Context>().SingleInstance();
-            builder.RegisterType<AzureDevopsClient>().SingleInstance();
+            builder.RegisterModule<TestRailSynchronizerModule>();
+            builder.RegisterModule<AzureDevopsSynchronizerModule>();
         }
     }
 }
