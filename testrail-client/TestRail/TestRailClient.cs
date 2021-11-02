@@ -1187,35 +1187,21 @@ namespace TestRail
         /// <returns>The List result of the request.</returns>
         private RequestResult<T> _SendBulkGetCommand<T>(string uri, CommandAction type)
         {
-
             var strType = type.ToString().ToLower();
             var temp = _SendGetCommand<BulkAPI>(uri);
-            try
+            var list = WrappedList<T>(temp.Payload.DataItems[strType].ToString());
+
+            while (temp.Payload._Links.Next != null)
             {
-                var list = WrappedList<T>(temp.Payload.DataItems[strType].ToString());
-                while (temp.Payload._Links.Next != null)
+                temp = _SendGetCommand<BulkAPI>($"?{temp.Payload._Links.Next}");
+                var additionalList = WrappedList<T>(temp.Payload.DataItems[strType].ToString());
+                foreach (var item in additionalList)
                 {
-                    temp = _SendGetCommand<BulkAPI>($"?{temp.Payload._Links.Next}");
-                    var additionalList = WrappedList<T>(temp.Payload.DataItems[strType].ToString());
-                    foreach (var item in additionalList)
-                    {
-                        list.Add(item);
-                    }
+                    list.Add(item);
                 }
-
-
-                return new RequestResult<T>(temp.StatusCode, thrownException: temp.ThrownException,
-                    payload: (T)list);
             }
 
-            catch (NullReferenceException)
-            {
-                var errorText = temp.RawJson
-                    .Replace("{\"error\":\"", string.Empty)
-                    .Replace("\"}", string.Empty);
-
-                throw new ArgumentException($"\n{errorText}\r\n\n");
-            }
+            return new RequestResult<T>(temp.StatusCode, thrownException: temp.ThrownException, payload: (T)list);
         }
 
         private IList WrappedList<T>(string unwrappedJson)

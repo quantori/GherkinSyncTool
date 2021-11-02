@@ -163,6 +163,16 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
             Log.Info($"Section moved: [{result.Payload.Id}] {result.Payload.Name}");
         }
 
+        public IEnumerable<CaseField> GetCaseFields()
+        {
+            Log.Debug("Getting case fields");
+            var policy = CreateResultHandlerPolicy<IList<CaseField>>();
+            var caseFields = policy.Execute(() =>
+                _testRailClient.GetCaseFields());
+            ValidateRequestResult(caseFields);
+            return caseFields.Payload;
+        }
+
         /// <summary>
         /// RetryPolicy for request result of given type 
         /// </summary>
