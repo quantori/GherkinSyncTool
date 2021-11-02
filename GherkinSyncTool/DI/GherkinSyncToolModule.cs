@@ -15,6 +15,7 @@ namespace GherkinSyncTool.DI
             builder.RegisterType<Context>().SingleInstance();
             builder.RegisterModule<TestRailSynchronizerModule>();
             builder.RegisterModule<AzureDevopsSynchronizerModule>();
+            builder.RegisterType<CustomFieldsChecker>().SingleInstance();
         }
     }
 }
