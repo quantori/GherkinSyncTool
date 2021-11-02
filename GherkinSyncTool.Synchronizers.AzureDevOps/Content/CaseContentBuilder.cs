@@ -9,8 +9,6 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 {
     public class CaseContentBuilder
     {
-        private readonly GherkinSyncToolConfig _gherkinSyncToolConfig = ConfigurationManager.GetConfiguration<GherkinSyncToolConfig>();
-
         public JsonPatchDocument BuildTestCaseDocument(Scenario scenario, IFeatureFile featureFile, int id)
         {
             JsonPatchDocument patchDocument = new JsonPatchDocument();
