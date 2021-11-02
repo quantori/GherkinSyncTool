@@ -1,6 +1,5 @@
 ﻿using Gherkin.Ast;
 using GherkinSyncTool.Models;
-using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Model;
 using Microsoft.VisualStudio.Services.WebApi.Patch;
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
@@ -12,7 +11,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         public JsonPatchDocument BuildTestCaseDocument(Scenario scenario, IFeatureFile featureFile, int id)
         {
             JsonPatchDocument patchDocument = new JsonPatchDocument();
-            
+
             patchDocument.Add(
                 new JsonPatchOperation
                 {
@@ -37,7 +36,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                     Value = id
                 }
             );
-            
+
             return patchDocument;
         }
     }
