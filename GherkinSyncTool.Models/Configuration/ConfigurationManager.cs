@@ -6,12 +6,13 @@ namespace GherkinSyncTool.Models.Configuration
 {
     public static class ConfigurationManager
     {
-        private static IConfiguration _configuration;
+        public static IConfiguration Config { get; private set; }
+
         public static T GetConfiguration<T>() where T : IConfigs
         {
-            if (_configuration is null) throw new ArgumentException("Please, init configuration");
+            if (Config is null) throw new ArgumentException("Please, init configuration");
             
-            var config = _configuration.Get<T>();
+            var config = Config.Get<T>();
             config.ValidateConfigs();
 
             return config;
@@ -19,9 +20,10 @@ namespace GherkinSyncTool.Models.Configuration
 
         public static void InitConfiguration(string[] commandLineArguments)
         {
-            _configuration = new ConfigurationBuilder()
+            Config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", true, true)
+                .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("TMS")}.json", true, true)
                 .AddEnvironmentVariables()
                 .AddCommandLine(commandLineArguments)
                 .Build();

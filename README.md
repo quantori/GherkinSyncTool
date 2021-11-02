@@ -6,11 +6,12 @@ Quantori GherkinSyncTool is an open-source console application that synchronizes
 in [Gherkin syntax](https://cucumber.io/docs/gherkin/) (also known as feature files) with a test management system or
 any other destination.
 
-![image](https://user-images.githubusercontent.com/24970976/135101818-fbf2dce8-0421-427d-97c5-49a42c5f4c58.png)
+![Architecture](Docs/Architecture.png)
 
 ## Supported test management systems
 
 - TestRail
+- Azure DevOps
 
 ## Installation
 
@@ -29,14 +30,15 @@ dotnet .\.\GherkinSyncTool\bin\Debug\net5.0\GherkinSyncTool.dll
 
 ### TestRail
 
-In order for the tool to work correctly, the TestRail test template should have the custom fields that are presented in the table
+TestRail's API should be enabled. In order for the tool to work correctly, the TestRail test template should have the custom fields that are presented in the table
 below. The template should not contain any required fields. An existing template can be used or a new one created.
 
-| System Name       | Type        |
-| ----------------- | ----------- |
-| `preconds`        | Text type   |
-| `steps_separated` | Step type   |
-| `custom_tags`     | String type |
+| System Name          | Type   |
+| -------------------- | ------ |
+| `preconds`           | Text   |
+| `steps_separated`    | Step   |
+| `tags`               | String |
+| `gherkinsynctool_id` | String |
 
 ## Configuration
 
@@ -73,20 +75,30 @@ GherkinSyncTool can be configured in three ways. The priority corresponds to the
 | Password                   | TestRail password                                                                                | Yes      |
 | ArchiveSection             | Deleted folders will be moved to this section                                                    | No       |
 
+### Azure DevOps settings
+
+| Parameter           | Description                 | Required |
+| ------------------- | --------------------------- | :------: |
+| BaseUrl             | Azure DevOps URL address    | Yes      |
+| PersonalAccessToken | Personal access token (PAT) | Yes      |
+| Project             | Name of a project           | Yes      |
+
 ## Usage
 
 The GherkinSyncTool scans the files in the specified folder for the * .feature files. It sends API calls to a test
-management system to create or update test cases. Received test ID will be populated into the feature files as tags for the
-following synchronization.
+management system to create or update test cases. Received test ID will be populated into the feature files as tags for
+the following synchronization.
+Test management system for synchronization is selected by the presence of a particular test management system settings.
+![Diagram](Docs/Diagram.png)
 
 ## History
 
 The project selected a test strategy with a single place for storing autotests and manual tests. The test strategy
 should reduce the gap between manual and automation tests and make support easier. To achieve this, Gherkin syntax was
 chosen. The process of describing test scenarios in such a way is a behavior-driven development (BDD). The project uses
-the TestRail test management system. The GherkinSyncTool allows having both manual and automated test scenarios in TestRail
-so that it is possible to create test runs and have an understanding of what is automated and what should be executed
-manually.
+the TestRail test management system. The GherkinSyncTool allows having both manual and automated test scenarios in
+TestRail so that it is possible to create test runs and have an understanding of what is automated and what should be
+executed manually.
 
 ## Contribution
 

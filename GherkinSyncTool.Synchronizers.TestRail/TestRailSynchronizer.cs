@@ -24,22 +24,19 @@ namespace GherkinSyncTool.Synchronizers.TestRail
         private readonly SectionSynchronizer _sectionSynchronizer;
         private readonly GherkinSyncToolConfig _gherkinSyncToolConfig = ConfigurationManager.GetConfiguration<GherkinSyncToolConfig>();
         private readonly Context _context;
-        private readonly CustomFieldsChecker _customFieldsChecker;
 
         public TestRailSynchronizer(TestRailClientWrapper testRailClientWrapper, CaseContentBuilder caseContentBuilder,
-            SectionSynchronizer sectionSynchronizer, Context context, CustomFieldsChecker customFieldsChecker)
+            SectionSynchronizer sectionSynchronizer, Context context)
         {
             _testRailClientWrapper = testRailClientWrapper;
             _caseContentBuilder = caseContentBuilder;
             _sectionSynchronizer = sectionSynchronizer;
             _context = context;
-            _customFieldsChecker = customFieldsChecker;
         }
 
         public void Sync(List<IFeatureFile> featureFiles)
         {
             Log.Info($"# Start synchronization with TestRail");
-            _customFieldsChecker.CheckCustomFields();
             var stopwatch = Stopwatch.StartNew();
             var casesToMove = new Dictionary<ulong, List<ulong>>();
             var testRailCases = _testRailClientWrapper.GetCases();
@@ -55,7 +52,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
 
                     var caseRequest = _caseContentBuilder.BuildCaseRequest(scenario, featureFile, featureFileSectionId);
 
-                    // Create test case for feature file that first time sync, no tag id present.  
+                    // Create test case for feature file which is getting synced for the first time, so no tag id present.  
                     if (tagId is null)
                     {
                         Case addCaseResponse;
