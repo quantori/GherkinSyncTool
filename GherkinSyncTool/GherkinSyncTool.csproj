@@ -1,23 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <AssemblyVersion>2.0.0</AssemblyVersion>
+        <AssemblyVersion>3.0.0</AssemblyVersion>
         <OutputType>Exe</OutputType>
         <TargetFramework>net5.0</TargetFramework>
         <PackAsTool>true</PackAsTool>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Autofac" Version="6.2.0" />
-        <PackageReference Include="Gherkin" Version="20.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="5.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="5.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="5.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
-        <PackageReference Include="NLog" Version="4.7.10" />
-        <PackageReference Include="Polly" Version="7.2.2" />
+        <PackageReference Include="Autofac" Version="6.3.0" />
+        <PackageReference Include="CommandLineParser" Version="2.8.0" />
+        <PackageReference Include="NLog" Version="4.7.11" />
     </ItemGroup>
 
     <ItemGroup>
@@ -33,7 +26,18 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\GherkinSyncTool.Models\GherkinSyncTool.Models.csproj" />
+      <ProjectReference Include="..\GherkinSyncTool.Synchronizers.AzureDevOps\GherkinSyncTool.Synchronizers.AzureDevOps.csproj" />
+      <ProjectReference Include="..\GherkinSyncTool.Synchronizers.TestRail\GherkinSyncTool.Synchronizers.TestRail.csproj" />
       <ProjectReference Include="..\testrail-client\TestRail\TestRail.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="bin\Debug\net5.0\TestCases\BasicGherkin.feature" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Synchronizers\AzureDevopsSynchronizer" />
     </ItemGroup>
     
 </Project>

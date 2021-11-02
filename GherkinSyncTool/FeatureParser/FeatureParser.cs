@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Gherkin;
-using GherkinSyncTool.Interfaces;
 using GherkinSyncTool.Models;
 using NLog;
 
