@@ -38,7 +38,7 @@ below. The template should not contain any required fields. An existing template
 | `preconds`           | Text   |
 | `steps_separated`    | Step   |
 | `tags`               | String |
-| 'gherkinsynctool_id' | String |
+| `gherkinsynctool_id` | String |
 
 ## Configuration
 
