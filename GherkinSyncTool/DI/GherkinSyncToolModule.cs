@@ -3,6 +3,7 @@ using GherkinSyncTool.FeatureParser;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Synchronizers.AzureDevOps;
 using GherkinSyncTool.Synchronizers.TestRail;
+using GherkinSyncTool.Synchronizers.TestRail.Utils;
 
 namespace GherkinSyncTool.DI
 {
