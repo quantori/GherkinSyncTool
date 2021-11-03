@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using Autofac;
 using Autofac.Core;
 using CommandLine;
+using GherkinSyncTool.CommandLineOptions;
 using GherkinSyncTool.DI;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
@@ -21,19 +21,17 @@ namespace GherkinSyncTool
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
         static readonly ContainerBuilder ContainerBuilder = new();
+        public static readonly string Version = $"GherkinSyncTool v.{Assembly.GetExecutingAssembly().GetName().Version}{Environment.NewLine}"; 
         
         private static int Main(string[] args)
         {
-            Log.Info("GherkinSyncTool v.{0}{1}",
-                Assembly.GetExecutingAssembly().GetName().Version,
-                Environment.NewLine);
             try
             {
                 ConfigurationManager.InitConfiguration(args);
-                Parser.Default.ParseArguments(args, LoadCliVerbsTypes())
-                    .WithParsed(RegisterSynchronizer)
-                    .WithNotParsed(_ => Environment.Exit(1));
 
+                ParseCommandLineArgs(args);
+
+                Log.Info(Version);
                 ContainerBuilder.RegisterModule<GherkinSyncToolModule>();
                 var container = ContainerBuilder.Build();
                 
@@ -74,11 +72,32 @@ namespace GherkinSyncTool
             return 0;
         }
 
-        private static void RegisterSynchronizer(object obj)
+        private static void ParseCommandLineArgs(string[] args)
         {
+            var parser = new Parser(settings => settings.HelpWriter = null);
+            var parserResult = parser.ParseArguments(args, CommandLineParserHelper.LoadCliVerbsTypes());
+            parserResult
+                .WithParsed(RegisterSynchronizer)
+                .WithNotParsed(errs => CommandLineParserHelper.DisplayHelp(parserResult, errs));
+        }
+
+        private static void RegisterSynchronizer(object options)
+        {
+            var syncOptions = (SyncOptions) options;
+
+            switch (syncOptions)
+            {
+                case { Testrail: true }:
+                    ContainerBuilder.RegisterType<TestRailSynchronizer>().As<ISynchronizer>().SingleInstance();
+                    return;
+                case { AzureDevOps: true }:
+                    ContainerBuilder.RegisterType<AzureDevopsSynchronizer>().As<ISynchronizer>().SingleInstance();
+                    return;
+            }
+            
             var configurationSections = ConfigurationManager.Config.GetChildren();
             if (configurationSections is null) throw new ArgumentException("Please, init configuration");
-
+                
             foreach (var section in configurationSections)
             {
                 if(section.Key.Contains(nameof(TestRailSettings)))
@@ -105,12 +124,6 @@ namespace GherkinSyncTool
             var featureFiles = featureFilesGrabber.TakeFiles();
             Log.Info(@$"{featureFiles.Count} file(s) parsed in {parseFilesStopwatch.Elapsed:mm\:ss\.fff}");
             return featureFiles;
-        }
-        
-        private	static Type[] LoadCliVerbsTypes()
-        {
-            return Assembly.GetExecutingAssembly().GetTypes()
-                .Where(t => t.GetCustomAttribute<VerbAttribute>() != null).ToArray();		 
         }
     }
 }
