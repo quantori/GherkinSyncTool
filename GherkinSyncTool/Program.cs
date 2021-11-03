@@ -85,15 +85,14 @@ namespace GherkinSyncTool
         {
             var syncOptions = (SyncOptions) options;
 
-            if (syncOptions.Testrail)
+            switch (syncOptions)
             {
-                ContainerBuilder.RegisterType<TestRailSynchronizer>().As<ISynchronizer>().SingleInstance();
-                return;
-            }
-            if (syncOptions.AzureDevOps)
-            {
-                ContainerBuilder.RegisterType<AzureDevopsSynchronizer>().As<ISynchronizer>().SingleInstance();
-                return;
+                case { Testrail: true }:
+                    ContainerBuilder.RegisterType<TestRailSynchronizer>().As<ISynchronizer>().SingleInstance();
+                    return;
+                case { AzureDevOps: true }:
+                    ContainerBuilder.RegisterType<AzureDevopsSynchronizer>().As<ISynchronizer>().SingleInstance();
+                    return;
             }
             
             var configurationSections = ConfigurationManager.Config.GetChildren();

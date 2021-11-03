@@ -35,6 +35,7 @@ namespace GherkinSyncTool.CommandLineOptions
                 h.AutoVersion = false;
                 h.AdditionalNewLineAfterOption = false;
                 h.Heading = Heading;
+                h.AddEnumValuesToHelpText = true;
                 return h;
             }));
             Environment.Exit(1);
