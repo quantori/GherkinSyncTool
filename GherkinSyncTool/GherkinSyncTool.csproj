@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <AssemblyVersion>3.0.1</AssemblyVersion>
+        <AssemblyVersion>3.1.0</AssemblyVersion>
         <OutputType>Exe</OutputType>
         <TargetFramework>net5.0</TargetFramework>
         <PackAsTool>true</PackAsTool>
+        <Company>Quantori</Company>
     </PropertyGroup>
 
     <ItemGroup>
@@ -30,14 +31,6 @@
       <ProjectReference Include="..\GherkinSyncTool.Synchronizers.AzureDevOps\GherkinSyncTool.Synchronizers.AzureDevOps.csproj" />
       <ProjectReference Include="..\GherkinSyncTool.Synchronizers.TestRail\GherkinSyncTool.Synchronizers.TestRail.csproj" />
       <ProjectReference Include="..\testrail-client\TestRail\TestRail.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Include="bin\Debug\net5.0\TestCases\BasicGherkin.feature" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Synchronizers\AzureDevopsSynchronizer" />
     </ItemGroup>
     
 </Project>

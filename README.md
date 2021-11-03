@@ -15,18 +15,31 @@ any other destination.
 
 ## Installation
 
-- Install [.NET](https://dotnet.microsoft.com/download)
-- Build solution
+GherkinSyncTool has the next ways how to run:
 
-```
-dotnet build
-```
+- Binary executable files for Linux, Windows, macOS are attached to the GitHub releases.
 
-- Run app
+- Nuget .NET tool https://www.nuget.org/packages/GherkinSyncTool/
+    
+    ```
+    dotnet tool install --global GherkinSyncTool
+    ```
 
-```
-dotnet .\.\GherkinSyncTool\bin\Debug\net5.0\GherkinSyncTool.dll
-```
+- Installation from the source code
+
+  - Install [.NET](https://dotnet.microsoft.com/download).
+  - Clone the repository and open the terminal there.
+  - Build solution
+
+    ```
+    dotnet build
+    ```
+    
+  - Run app
+    
+    ```
+    dotnet .\.\GherkinSyncTool\bin\Debug\net5.0\GherkinSyncTool.dll
+    ```
 
 ### TestRail
 
@@ -45,8 +58,8 @@ below. The template should not contain any required fields. An existing template
 GherkinSyncTool can be configured in three ways. The priority corresponds to the list order.
 
 1. appsettings.json. [Example](GherkinSyncTool\appsettings.json).
-2. Environment variables
-3. Command-line arguments
+2. Environment variables.
+3. Command-line arguments.
 
 ### Common settings
 
