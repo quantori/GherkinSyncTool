@@ -6,5 +6,7 @@
         public const string Description = "System.Description";
         public const string Steps = "Microsoft.VSTS.TCM.Steps";
         public const string Id = "id";
+        public const string Parameters =  "Microsoft.VSTS.TCM.Parameters";
+        public const string LocalDataSource = "Microsoft.VSTS.TCM.LocalDataSource";
     }
 }

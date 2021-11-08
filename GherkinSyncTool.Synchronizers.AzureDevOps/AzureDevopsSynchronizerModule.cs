@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Client;
+using Microsoft.TeamFoundation.TestManagement.WebApi;
 
 namespace GherkinSyncTool.Synchronizers.AzureDevOps
 {
@@ -9,6 +10,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
         {
             builder.RegisterType<AzureDevopsClient>().SingleInstance();
             builder.RegisterType<Content.CaseContentBuilder>().SingleInstance();
+            builder.RegisterType<TestBaseHelper>().As<ITestBaseHelper>();
         }
     }
 }
