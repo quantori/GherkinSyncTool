@@ -46,6 +46,6 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
 
         private IEnumerable<string> GetExpectedCustomFields() => typeof(CaseCustomFields).GetProperties()
             .Select(p => p.GetCustomAttribute<JsonPropertyAttribute>())
-            .Select(jp => jp.PropertyName).ToList();
+            .Select(jp => jp.PropertyName);
     }
 }
