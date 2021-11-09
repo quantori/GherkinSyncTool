@@ -13,7 +13,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
     public class CustomFieldsChecker
     {
         private readonly TestRailClientWrapper _testRailClientWrapper;
-        private static readonly TestRailSettings _testRailSettings = ConfigurationManager.GetConfiguration<TestRailConfigs>().TestRailSettings;
+        private readonly TestRailSettings _testRailSettings = ConfigurationManager.GetConfiguration<TestRailConfigs>().TestRailSettings;
 
         public CustomFieldsChecker(TestRailClientWrapper testRailClientWrapper)
         {
@@ -22,9 +22,9 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
 
         public void CheckCustomFields()
         {
-            var caseFields = _testRailClientWrapper.GetCaseFields();
+            var caseFields = _testRailClientWrapper.GetCaseFields().ToList();
             var actualCustomFieldNames = caseFields.Select(f => f.SystemName);
-            var expectedCustomFields = GetExpectedCustomFields();
+            var expectedCustomFields = GetExpectedCustomFields().ToList();
             foreach (var customField in actualCustomFieldNames)
             {
                 if (!expectedCustomFields.Contains(customField))
