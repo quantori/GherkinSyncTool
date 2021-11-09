@@ -24,19 +24,23 @@ namespace GherkinSyncTool.Synchronizers.TestRail
         private readonly SectionSynchronizer _sectionSynchronizer;
         private readonly GherkinSyncToolConfig _gherkinSyncToolConfig = ConfigurationManager.GetConfiguration<GherkinSyncToolConfig>();
         private readonly Context _context;
+        private readonly CustomFieldsChecker _customFieldsChecker;
+
 
         public TestRailSynchronizer(TestRailClientWrapper testRailClientWrapper, CaseContentBuilder caseContentBuilder,
-            SectionSynchronizer sectionSynchronizer, Context context)
+            SectionSynchronizer sectionSynchronizer, Context context, CustomFieldsChecker customFieldsChecker)
         {
             _testRailClientWrapper = testRailClientWrapper;
             _caseContentBuilder = caseContentBuilder;
             _sectionSynchronizer = sectionSynchronizer;
             _context = context;
+            _customFieldsChecker = customFieldsChecker;
         }
 
         public void Sync(List<IFeatureFile> featureFiles)
         {
             Log.Info($"# Start synchronization with TestRail");
+            _customFieldsChecker.CheckCustomFields();
             var stopwatch = Stopwatch.StartNew();
             var casesToMove = new Dictionary<ulong, List<ulong>>();
             var testRailCases = _testRailClientWrapper.GetCases();
