@@ -6,12 +6,14 @@ using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Synchronizers.TestRail.Client;
 using GherkinSyncTool.Synchronizers.TestRail.Model;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace GherkinSyncTool.Synchronizers.TestRail.Utils
 {
     public class CustomFieldsChecker
     {
         private readonly TestRailClientWrapper _testRailClientWrapper;
+        private static readonly TestRailSettings _testRailSettings = ConfigurationManager.GetConfiguration<TestRailConfigs>().TestRailSettings;
 
         public CustomFieldsChecker(TestRailClientWrapper testRailClientWrapper)
         {
@@ -20,12 +22,25 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
 
         public void CheckCustomFields()
         {
-            var actualCustomFields = _testRailClientWrapper.GetCaseFields().Select(f => f.SystemName);
+            var caseFields = _testRailClientWrapper.GetCaseFields();
+            var actualCustomFieldNames = caseFields.Select(f => f.SystemName);
             var expectedCustomFields = GetExpectedCustomFields();
-            foreach (var customField in expectedCustomFields.Where(customField => !actualCustomFields.Contains(customField)))
+            foreach (var customField in expectedCustomFields.Where(customField => !actualCustomFieldNames.Contains(customField)))
             {
                 throw new ArgumentException(
                     $"\r\nOne of the required custom fields is missing: \"{customField}\". Please check your TestRail case fields in customization menu\r\n");
+            }
+
+            foreach (var field in caseFields.Where(f=>expectedCustomFields.Contains(f.SystemName)))
+            {
+                var fieldJson = field.JsonFromResponse["configs"].First;
+                var context = fieldJson.First.Children().First().ToObject<CustomFieldContext>();
+
+                if (!context.IsGlobal && !context.ProjectIds.Contains(_testRailSettings.ProjectId))
+                {
+                    throw new ArgumentException(
+                        $"\r\nOne of the required fields: \"{field.SystemName}\" is not configured for the project in test rail and is not global\r\n");
+                }
             }
         }
 
