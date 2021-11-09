@@ -5,6 +5,7 @@ using System.Text;
 using Gherkin.Ast;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
+using GherkinSyncTool.Models.Utils;
 using GherkinSyncTool.Synchronizers.TestRail.Model;
 
 namespace GherkinSyncTool.Synchronizers.TestRail.Content
@@ -83,33 +84,8 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
 
         private string ConvertToStringTags(Scenario scenario, IFeatureFile featureFile)
         {
-            List<Tag> allTags = new List<Tag>();
 
-            var featureTags = featureFile.Document.Feature.Tags.ToList();
-            if (featureTags.Any())
-            {
-                allTags.AddRange(featureTags);
-            }
-
-            var scenarioTags = scenario.Tags.ToList();
-            if (scenarioTags.Any())
-            {
-                allTags.AddRange(scenarioTags);
-            }
-
-            if (scenario.Examples != null && scenario.Examples.Any())
-            {
-                foreach (var example in scenario.Examples)
-                {
-                    if (example.Tags != null && example.Tags.Any())
-                    {
-                        allTags.AddRange(example.Tags);
-                    }
-                }
-            }
-
-            allTags.RemoveAll(tag => tag.Name.Contains(_gherkinSyncToolConfig.TagIdPrefix));
-
+            var allTags = GherkinFileHelper.GetAllTags(scenario, featureFile);
             return allTags.Any() ? string.Join(", ", allTags.Select(tag => tag.Name.Substring(1))) : null;
         }
 

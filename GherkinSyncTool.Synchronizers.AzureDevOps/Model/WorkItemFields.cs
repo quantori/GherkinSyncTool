@@ -8,5 +8,6 @@
         public const string Id = "id";
         public const string Parameters =  "Microsoft.VSTS.TCM.Parameters";
         public const string LocalDataSource = "Microsoft.VSTS.TCM.LocalDataSource";
+        public const string Tags = "System.Tags";
     }
 }

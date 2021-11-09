@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Gherkin.Ast;
 using GherkinSyncTool.Models;
+using GherkinSyncTool.Models.Utils;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Model;
 using Microsoft.TeamFoundation.TestManagement.WebApi;
 using Microsoft.VisualStudio.Services.WebApi.Patch;
@@ -24,19 +25,19 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         {
             JsonPatchDocument patchDocument = new JsonPatchDocument
             {
-                new JsonPatchOperation
+                new()
                 {
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.Title}",
                     Value = scenario.Name
                 },
-                new JsonPatchOperation
+                new()
                 {
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.Description}",
-                    Value = featureFile.RelativePath
+                    Value = $"<b>Feature file: </b>{featureFile.RelativePath}{Environment.NewLine}{ConvertToStringPreconditions(scenario, featureFile)}"
                 },
-                new JsonPatchOperation
+                new()
                 {
                     Operation = Operation.Add,
                     Path = $"/{WorkItemFields.Id}",
@@ -44,8 +45,21 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 }
             };
 
-            var result = AddTestStepsToJsonDocument(patchDocument, GetStepsFromFeatureFile(scenario, featureFile));
-            return result;
+            AddTestStepsToJsonDocument(patchDocument, GetStepsFromFeatureFile(scenario, featureFile));
+            
+            var tags = ConvertToStringTags(scenario, featureFile);
+            if (!string.IsNullOrWhiteSpace(tags))
+            {
+                var tagsOperation = new JsonPatchOperation()
+                {
+                    Operation = Operation.Add,
+                    Path = $"/fields/{WorkItemFields.Tags}",
+                    Value = tags
+                };
+                patchDocument.Add(tagsOperation);
+            }
+            
+            return patchDocument;
         }
 
         private JsonPatchDocument AddTestStepsToJsonDocument(JsonPatchDocument jsonPatchDocument, List<string> steps)
@@ -69,6 +83,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             if (background is not null)
             {
                 var backgroundSteps = ExtractStepsFromScenario(background.Steps.ToList());
+                //TODO:  backgroundSteps.ForEach(s => s = $"Background: {s}");
                 return backgroundSteps.Concat(scenarioSteps).ToList();
             }
 
@@ -130,6 +145,41 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             table.Append("</table>");
 
             return table.ToString();
+        }
+        
+        private string ConvertToStringPreconditions(Scenario scenario, IFeatureFile featureFile)
+        {
+            var preconditions = new StringBuilder();
+            preconditions.Append($"<p><b>{featureFile.Document.Feature.Keyword}:</b> {featureFile.Document.Feature.Name}</p>");
+            preconditions.Append($"<p>{featureFile.Document.Feature.Description}</p>");
+            preconditions.Append($"<p><b>{scenario.Keyword}:</b> {scenario.Name}");
+            preconditions.Append($@"<p>{scenario.Description}</p>");
+            
+            return preconditions.ToString();
+        }
+
+        //TODO:
+        // private string GetParametersExamples(Scenario scenario)
+        // {
+        //     var examples = scenario.Examples.ToList();
+        //     if (examples.Any())
+        //     {
+        //         foreach (var example in examples)
+        //         {
+        //             preconditions.Append($"## {example.Keyword}: {example.Name}");
+        //
+        //             var tableRows = new List<TableRow> {example.TableHeader};
+        //             tableRows.AddRange(example.TableBody);
+        //             preconditions.Append(ConvertToStringTable(tableRows));
+        //         }
+        //     }
+        // }
+        
+        private string ConvertToStringTags(Scenario scenario, IFeatureFile featureFile)
+        {
+            var allTags = GherkinFileHelper.GetAllTags(scenario, featureFile);
+
+            return allTags.Any() ? string.Join("; ", allTags.Select(tag => tag.Name.Substring(1))) : null;
         }
     }
 }
