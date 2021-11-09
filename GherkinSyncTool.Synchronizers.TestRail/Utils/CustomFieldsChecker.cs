@@ -25,21 +25,23 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
             var caseFields = _testRailClientWrapper.GetCaseFields();
             var actualCustomFieldNames = caseFields.Select(f => f.SystemName);
             var expectedCustomFields = GetExpectedCustomFields();
-            foreach (var customField in expectedCustomFields.Where(customField => !actualCustomFieldNames.Contains(customField)))
+            foreach (var customField in actualCustomFieldNames)
             {
-                throw new ArgumentException(
-                    $"\r\nOne of the required custom fields is missing: \"{customField}\". Please check your TestRail case fields in customization menu\r\n");
+                if (!expectedCustomFields.Contains(customField))
+                {
+                    throw new ArgumentException(
+                        $"\r\nOne of the required custom fields is missing: \"{customField}\". Please check your TestRail case fields in customization menu\r\n");
+                }
             }
 
-            foreach (var field in caseFields.Where(f=>expectedCustomFields.Contains(f.SystemName)))
+            foreach (var field in caseFields.Where(f => expectedCustomFields.Contains(f.SystemName)))
             {
-                var fieldJson = field.JsonFromResponse["configs"].First;
-                var context = fieldJson.First.Children().First().ToObject<CustomFieldContext>();
+                var context = field.JsonFromResponse.ToObject<CustomFieldsModel>().Configs.First().Context;
 
                 if (!context.IsGlobal && !context.ProjectIds.Contains(_testRailSettings.ProjectId))
                 {
                     throw new ArgumentException(
-                        $"\r\nOne of the required fields: \"{field.SystemName}\" is not configured for the project in test rail and is not global\r\n");
+                        $"\r\nOne of the required fields: \"{field.SystemName}\" should be global or attached to the project with id: {_testRailSettings.ProjectId}\r\n");
                 }
             }
         }
