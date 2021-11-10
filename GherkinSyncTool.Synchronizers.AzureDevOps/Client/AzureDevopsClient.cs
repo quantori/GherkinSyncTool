@@ -35,13 +35,6 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             return workItemTrackingHttpClient.CreateWorkItemBatchRequest(_azureDevopsSettings.Project, WorkItemTypes.TestCase, patchDocument, false, false);
         }
 
-        //TODO:
-        public WitBatchRequest UpdateTestCaseBatchRequest(int id, JsonPatchDocument patchDocument)
-        {
-            var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
-            return workItemTrackingHttpClient.CreateWorkItemBatchRequest(id, patchDocument, false, false);
-        }
-
         public List<WorkItem> ExecuteWorkItemBatch(List<WitBatchRequest> request)
         {
             //Azure DevOps batch request limitation
