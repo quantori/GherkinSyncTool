@@ -35,6 +35,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             return workItemTrackingHttpClient.CreateWorkItemBatchRequest(_azureDevopsSettings.Project, WorkItemTypes.TestCase, patchDocument, false, false);
         }
 
+        //TODO:
         public WitBatchRequest UpdateTestCaseBatchRequest(int id, JsonPatchDocument patchDocument)
         {
             var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();

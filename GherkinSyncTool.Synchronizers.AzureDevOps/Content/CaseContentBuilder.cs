@@ -7,6 +7,7 @@ using System.Text;
 using System.Xml.Serialization;
 using Gherkin.Ast;
 using GherkinSyncTool.Models;
+using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Models.Utils;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Model;
 using Microsoft.TeamFoundation.TestManagement.WebApi;
@@ -19,6 +20,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
     public class CaseContentBuilder
     {
         private readonly ITestBaseHelper _testBaseHelper;
+        private readonly AzureDevopsSettings _azureDevopsSettings = ConfigurationManager.GetConfiguration<AzureDevopsConfigs>().AzureDevopsSettings;
 
         public CaseContentBuilder(ITestBaseHelper testBaseHelper)
         {
@@ -39,7 +41,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 {
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.Description}",
-                    Value = $"<b>Feature file: </b>{featureFile.RelativePath}{Environment.NewLine}{ConvertToStringPreconditions(scenario, featureFile)}"
+                    Value = BuildDescription(scenario, featureFile)
                 },
                 new()
                 {
@@ -49,11 +51,26 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 }
             };
 
+            AddAreaPathToJsonDocument(patchDocument);
             AddTestStepsToJsonDocument(patchDocument, scenario, featureFile);
             AddTestTagsToJsonDocument(patchDocument, scenario, featureFile);
             AddParametersToJsonDocument(patchDocument, scenario);
 
             return patchDocument;
+        }
+
+        private void AddAreaPathToJsonDocument(JsonPatchDocument patchDocument)
+        {
+            if (!string.IsNullOrWhiteSpace(_azureDevopsSettings.Area))
+            {
+                var tagsOperation = new JsonPatchOperation
+                {
+                    Operation = Operation.Add,
+                    Path = $"/fields/{WorkItemFields.AreaPath}",
+                    Value = _azureDevopsSettings.Area
+                };
+                patchDocument.Add(tagsOperation);
+            }
         }
 
         private void AddParametersToJsonDocument(JsonPatchDocument patchDocument, Scenario scenario)
@@ -203,15 +220,16 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return table.ToString();
         }
         
-        private string ConvertToStringPreconditions(Scenario scenario, IFeatureFile featureFile)
+        private string BuildDescription(Scenario scenario, IFeatureFile featureFile)
         {
-            var preconditions = new StringBuilder();
-            preconditions.Append($"<p><b>{featureFile.Document.Feature.Keyword}:</b> {featureFile.Document.Feature.Name}</p>");
-            preconditions.Append($"<p>{featureFile.Document.Feature.Description}</p>");
-            preconditions.Append($"<p><b>{scenario.Keyword}:</b> {scenario.Name}");
-            preconditions.Append($@"<p>{scenario.Description}</p>");
-            
-            return preconditions.ToString();
+            var description = new StringBuilder();
+            description.Append($"<p><b>Feature file: </b>{featureFile.RelativePath}</p>");
+            description.Append($"<p><b>{featureFile.Document.Feature.Keyword}:</b> {featureFile.Document.Feature.Name}</p>");
+            description.Append($"<p>{featureFile.Document.Feature.Description}</p>");
+            description.Append($"<p><b>{scenario.Keyword}:</b> {scenario.Name}");
+            description.Append($@"<p>{scenario.Description}</p>");
+
+            return description.ToString();
         }
         
         private string GetXmlTestParameters(Scenario scenario)

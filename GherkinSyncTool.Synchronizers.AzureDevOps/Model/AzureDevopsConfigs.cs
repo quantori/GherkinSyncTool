@@ -9,7 +9,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Model
         
         public void ValidateConfigs()
         {
-            if (AzureDevopsSettings is null) throw new ArgumentException("Please, init TestRail configuration");
+            if (AzureDevopsSettings is null) throw new ArgumentException("Please, init Azure DevOps configuration");
             
             if (string.IsNullOrWhiteSpace(AzureDevopsSettings.BaseUrl) ||
                 !Uri.IsWellFormedUriString(AzureDevopsSettings.BaseUrl, UriKind.Absolute))
@@ -31,5 +31,6 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Model
         public string BaseUrl { get; set; }
         public string PersonalAccessToken { get; set; }
         public string Project { get; set; }
+        public string Area { get; set; }
     }
 }

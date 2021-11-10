@@ -9,5 +9,6 @@
         public const string Parameters =  "Microsoft.VSTS.TCM.Parameters";
         public const string LocalDataSource = "Microsoft.VSTS.TCM.LocalDataSource";
         public const string Tags = "System.Tags";
+        public const string AreaPath = "System.AreaPath";
     }
 }
