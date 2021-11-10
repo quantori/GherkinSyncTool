@@ -1,6 +1,7 @@
 ﻿using Autofac;
 using GherkinSyncTool.Synchronizers.TestRail.Client;
 using GherkinSyncTool.Synchronizers.TestRail.Content;
+using GherkinSyncTool.Synchronizers.TestRail.Utils;
 
 namespace GherkinSyncTool.Synchronizers.TestRail
 {
@@ -11,6 +12,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
             builder.RegisterType<TestRailClientWrapper>().SingleInstance();
             builder.RegisterType<CaseContentBuilder>().SingleInstance();
             builder.RegisterType<SectionSynchronizer>().SingleInstance();
+            builder.RegisterType<CustomFieldsChecker>().SingleInstance();
         }
     }
 }

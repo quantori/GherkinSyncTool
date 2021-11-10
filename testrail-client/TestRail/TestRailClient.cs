@@ -683,8 +683,8 @@ namespace TestRail
         /// </returns>
         public RequestResult<BaseTestRailType> DeleteCases(ulong projectId, IEnumerable<ulong> caseIds, ulong? suiteId = null, bool? soft = null)
         {
-            var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i=>i.ToString()))));
-            
+            var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i => i.ToString()))));
+
             var optionalSuiteId = suiteId.HasValue ? $"&suite_id={suiteId.Value}" : string.Empty;
             var optionalSoft = soft.HasValue ? $"&soft={(soft.Value ? 1 : 0)}" : string.Empty;
             var options = $"{optionalSuiteId}{optionalSoft}";
@@ -773,7 +773,7 @@ namespace TestRail
         {
             var uri = _CreateUri_(CommandType.Move, CommandAction.CasesToSection, newSectionId);
 
-            var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i=>i.ToString()))));
+            var cases = new JObject(new JProperty("case_ids", new JArray(caseIds.Select(i => i.ToString()))));
 
             return _SendPostCommand<BaseTestRailType>(uri, cases);
         }
@@ -792,7 +792,7 @@ namespace TestRail
             var parent = new JProperty("parent_id", parentId);
             var after = new JProperty("after_id", afterId);
 
-            var newPosition = new JObject {parent, after};
+            var newPosition = new JObject { parent, after };
 
             return _SendPostCommand<Section>(uri, newPosition);
         }
@@ -1239,7 +1239,7 @@ namespace TestRail
             // with the corresponding response code
             catch (WebException ex)
             {
-                var response = (HttpWebResponse) ex.Response;
+                var response = (HttpWebResponse)ex.Response;
                 using (var reader = new StreamReader(response.GetResponseStream() ?? Stream.Null))
                 {
                     var json = reader.ReadToEnd();
