@@ -63,13 +63,12 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         {
             if (!string.IsNullOrWhiteSpace(_azureDevopsSettings.Area))
             {
-                var tagsOperation = new JsonPatchOperation
+                patchDocument.Add(new JsonPatchOperation
                 {
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.AreaPath}",
-                    Value = _azureDevopsSettings.Area
-                };
-                patchDocument.Add(tagsOperation);
+                    Value = _azureDevopsSettings.Area   
+                });
             }
         }
 
@@ -99,15 +98,15 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         private void AddTestTagsToJsonDocument(JsonPatchDocument patchDocument, Scenario scenario, IFeatureFile featureFile)
         {
             var tags = ConvertToStringTags(scenario, featureFile);
+            
             if (!string.IsNullOrWhiteSpace(tags))
             {
-                var tagsOperation = new JsonPatchOperation
+                patchDocument.Add(new JsonPatchOperation
                 {
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.Tags}",
                     Value = tags
-                };
-                patchDocument.Add(tagsOperation);
+                });
             }
         }
 
