@@ -11,19 +11,13 @@ namespace GherkinSyncTool.Models.Utils
 
         public static List<Tag> GetAllTags(Scenario scenario, IFeatureFile featureFile)
         {
-            List<Tag> allTags = new List<Tag>();
+            var allTags = new List<Tag>();
 
             var featureTags = featureFile.Document.Feature.Tags.ToList();
-            if (featureTags.Any())
-            {
-                allTags.AddRange(featureTags);
-            }
+            allTags.AddRange(featureTags);
 
             var scenarioTags = scenario.Tags.ToList();
-            if (scenarioTags.Any())
-            {
-                allTags.AddRange(scenarioTags);
-            }
+            allTags.AddRange(scenarioTags);
 
             if (scenario.Examples != null && scenario.Examples.Any())
             {
@@ -36,6 +30,7 @@ namespace GherkinSyncTool.Models.Utils
                 }
             }
 
+            //Remove test case id to not duplicate because it is visible in UI
             allTags.RemoveAll(tag => tag.Name.Contains(GherkinSyncToolConfig.TagIdPrefix));
 
             return allTags;

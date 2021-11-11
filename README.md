@@ -95,6 +95,7 @@ GherkinSyncTool can be configured in three ways. The priority corresponds to the
 | BaseUrl             | Azure DevOps URL address    | Yes      |
 | PersonalAccessToken | Personal access token (PAT) | Yes      |
 | Project             | Name of a project           | Yes      |
+| Area                | Work item area path         | No       |
 
 ## Usage
 

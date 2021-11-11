@@ -7,6 +7,7 @@ using System.Text;
 using System.Xml.Serialization;
 using Gherkin.Ast;
 using GherkinSyncTool.Models;
+using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Models.Utils;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Model;
 using Microsoft.TeamFoundation.TestManagement.WebApi;
@@ -19,6 +20,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
     public class CaseContentBuilder
     {
         private readonly ITestBaseHelper _testBaseHelper;
+        private readonly AzureDevopsSettings _azureDevopsSettings = ConfigurationManager.GetConfiguration<AzureDevopsConfigs>().AzureDevopsSettings;
 
         public CaseContentBuilder(ITestBaseHelper testBaseHelper)
         {
@@ -39,7 +41,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 {
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.Description}",
-                    Value = $"<b>Feature file: </b>{featureFile.RelativePath}{Environment.NewLine}{ConvertToStringPreconditions(scenario, featureFile)}"
+                    Value = BuildDescription(scenario, featureFile)
                 },
                 new()
                 {
@@ -49,11 +51,25 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 }
             };
 
+            AddAreaPathToJsonDocument(patchDocument);
             AddTestStepsToJsonDocument(patchDocument, scenario, featureFile);
             AddTestTagsToJsonDocument(patchDocument, scenario, featureFile);
             AddParametersToJsonDocument(patchDocument, scenario);
 
             return patchDocument;
+        }
+
+        private void AddAreaPathToJsonDocument(JsonPatchDocument patchDocument)
+        {
+            if (!string.IsNullOrWhiteSpace(_azureDevopsSettings.Area))
+            {
+                patchDocument.Add(new JsonPatchOperation
+                {
+                    Operation = Operation.Add,
+                    Path = $"/fields/{WorkItemFields.AreaPath}",
+                    Value = _azureDevopsSettings.Area   
+                });
+            }
         }
 
         private void AddParametersToJsonDocument(JsonPatchDocument patchDocument, Scenario scenario)
@@ -66,13 +82,13 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 {
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.Parameters}",
-                    Value = GetXmlTestParameters(scenario)
+                    Value = GetXmlTestParameters(scenario.Examples)
                 },
                 new()
                 {
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.LocalDataSource}",
-                    Value = GetXmlTestParametersValues(scenario)
+                    Value = GetXmlTestParametersValues(scenario.Examples)
                 }
             };
             
@@ -82,15 +98,15 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         private void AddTestTagsToJsonDocument(JsonPatchDocument patchDocument, Scenario scenario, IFeatureFile featureFile)
         {
             var tags = ConvertToStringTags(scenario, featureFile);
+            
             if (!string.IsNullOrWhiteSpace(tags))
             {
-                var tagsOperation = new JsonPatchOperation
+                patchDocument.Add(new JsonPatchOperation
                 {
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.Tags}",
                     Value = tags
-                };
-                patchDocument.Add(tagsOperation);
+                });
             }
         }
 
@@ -110,7 +126,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
         private List<string> GetStepsFromFeatureFile(Scenario scenario, IFeatureFile featureFile)
         {
-            var testParameters = GetTestParameters(scenario);
+            var testParameters = GetTestParameters(scenario.Examples);
             
             var scenarioSteps = ExtractStepsFromScenario(scenario.Steps.ToList(), testParameters);
 
@@ -132,7 +148,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         
         private List<string> ExtractStepsFromScenario(List<Step> steps, TestParameters testParameters)
         {
-            List<string> resultSteps = new List<string>();
+            var resultSteps = new List<string>();
             foreach (var step in steps)
             {
                 var keywordFormatted = $"<span style=\"color:RoyalBlue\">{step.Keyword.Trim()} </span>";
@@ -160,6 +176,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
         private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters)
         {
+            if (testParameters is null) return stringWithParameters;
             //Azure DevOps test parameters don't allow white spaces.
             foreach (var param in testParameters.Param)
             {
@@ -203,20 +220,24 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return table.ToString();
         }
         
-        private string ConvertToStringPreconditions(Scenario scenario, IFeatureFile featureFile)
+        private string BuildDescription(Scenario scenario, IFeatureFile featureFile)
         {
-            var preconditions = new StringBuilder();
-            preconditions.Append($"<p><b>{featureFile.Document.Feature.Keyword}:</b> {featureFile.Document.Feature.Name}</p>");
-            preconditions.Append($"<p>{featureFile.Document.Feature.Description}</p>");
-            preconditions.Append($"<p><b>{scenario.Keyword}:</b> {scenario.Name}");
-            preconditions.Append($@"<p>{scenario.Description}</p>");
-            
-            return preconditions.ToString();
+            var description = new StringBuilder();
+            description.Append($"<p><b>Feature file: </b>{featureFile.RelativePath}</p>");
+            description.Append($"<p><b>{featureFile.Document.Feature.Keyword}:</b> {featureFile.Document.Feature.Name}</p>");
+            description.Append($"<p>{featureFile.Document.Feature.Description}</p>");
+            description.Append($"<p><b>{scenario.Keyword}:</b> {scenario.Name}");
+            description.Append($@"<p>{scenario.Description}</p>");
+
+            return description.ToString();
         }
         
-        private string GetXmlTestParameters(Scenario scenario)
+        private string GetXmlTestParameters(IEnumerable<Examples> examples)
         {
-            var testParameters = GetTestParameters(scenario);
+            var examplesList = examples.ToList();
+            if (!examplesList.Any()) throw new ArgumentNullException(nameof(examples));
+            
+            var testParameters = GetTestParameters(examplesList);
             
             //Azure DevOps test parameters don't allow white spaces.
             for (var index = 0; index < testParameters.Param.Count; index++)
@@ -231,14 +252,14 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return stringWriter.ToString();
         }
         
-        private TestParameters GetTestParameters(Scenario scenario)
+        private TestParameters GetTestParameters(IEnumerable<Examples> examples)
         {
-            var examples = scenario.Examples.ToList();
-            if (!examples.Any()) throw new ArgumentNullException(nameof(scenario));
+            var examplesList = examples.ToList();
+            if (!examplesList.Any()) return null;
 
             var testParameters = new TestParameters {Param = new List<Param>()};
             
-            foreach (var headerCell in examples.First().TableHeader.Cells)
+            foreach (var headerCell in examplesList.First().TableHeader.Cells)
             {
                 testParameters.Param.Add(new Param{Name = headerCell.Value});
             }
@@ -246,16 +267,16 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return testParameters;
         }
         
-        private string GetXmlTestParametersValues(Scenario scenario)
+        private string GetXmlTestParametersValues(IEnumerable<Examples> examples)
         {
-            var examples = scenario.Examples.ToList();
-            if (!examples.Any()) throw new ArgumentNullException(nameof(scenario));
+            var examplesList = examples.ToList();
+            if (!examplesList.Any()) throw new ArgumentNullException(nameof(examples));
             
             var xmlSerializer = new XmlSerializer(typeof(DataSet));
             var dataSet = new DataSet("NewDataSet");
             var dataTable = new System.Data.DataTable("Table1");
             
-            var testParameters = GetTestParameters(scenario);
+            var testParameters = GetTestParameters(examplesList);
             
             foreach (var param in testParameters.Param)
             {
@@ -265,7 +286,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             }
             dataSet.Tables.Add(dataTable);
 
-            foreach (var example in examples)
+            foreach (var example in examplesList)
             {
                 foreach (var tableRow in example.TableBody)
                 {

@@ -72,7 +72,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
             }
             catch (Exception e)
             {
-                Log.Error(e.InnerException, $"The cases has not been created");
+                Log.Error(e, $"The cases has not been created");
                 _context.IsRunSuccessful = false;
             }
 
@@ -85,7 +85,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
             if (baseDirectory.Parent is null) throw new DirectoryNotFoundException($"Base directory {baseDirectory} does not have a parent");
 
             var description = (string)workItem.Fields[WorkItemFields.Description];
-            var relativePathPattern = $"{Regex.Escape(baseDirectory.Name)}.*.feature";
+            var relativePathPattern = $@"{Regex.Escape(baseDirectory.Name)}.*\.feature";
             var relativePathRegex = new Regex(relativePathPattern, RegexOptions.IgnoreCase);
             var relativePathMatch = relativePathRegex.Match(description);
             var relativePath = relativePathMatch.Value;

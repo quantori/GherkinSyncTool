@@ -84,7 +84,6 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
 
         private string ConvertToStringTags(Scenario scenario, IFeatureFile featureFile)
         {
-
             var allTags = GherkinFileHelper.GetAllTags(scenario, featureFile);
             return allTags.Any() ? string.Join(", ", allTags.Select(tag => tag.Name.Substring(1))) : null;
         }
