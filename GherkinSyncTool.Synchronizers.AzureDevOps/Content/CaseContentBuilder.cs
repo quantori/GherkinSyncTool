@@ -82,13 +82,13 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 {
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.Parameters}",
-                    Value = GetXmlTestParameters(scenario)
+                    Value = GetXmlTestParameters(scenario.Examples)
                 },
                 new()
                 {
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.LocalDataSource}",
-                    Value = GetXmlTestParametersValues(scenario)
+                    Value = GetXmlTestParametersValues(scenario.Examples)
                 }
             };
             
@@ -126,7 +126,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
         private List<string> GetStepsFromFeatureFile(Scenario scenario, IFeatureFile featureFile)
         {
-            var testParameters = GetTestParameters(scenario);
+            var testParameters = GetTestParameters(scenario.Examples);
             
             var scenarioSteps = ExtractStepsFromScenario(scenario.Steps.ToList(), testParameters);
 
@@ -148,7 +148,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         
         private List<string> ExtractStepsFromScenario(List<Step> steps, TestParameters testParameters)
         {
-            List<string> resultSteps = new List<string>();
+            var resultSteps = new List<string>();
             foreach (var step in steps)
             {
                 var keywordFormatted = $"<span style=\"color:RoyalBlue\">{step.Keyword.Trim()} </span>";
@@ -176,6 +176,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
         private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters)
         {
+            if (testParameters is null) return stringWithParameters;
             //Azure DevOps test parameters don't allow white spaces.
             foreach (var param in testParameters.Param)
             {
@@ -231,9 +232,12 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return description.ToString();
         }
         
-        private string GetXmlTestParameters(Scenario scenario)
+        private string GetXmlTestParameters(IEnumerable<Examples> examples)
         {
-            var testParameters = GetTestParameters(scenario);
+            var examplesList = examples.ToList();
+            if (!examplesList.Any()) throw new ArgumentNullException(nameof(examples));
+            
+            var testParameters = GetTestParameters(examplesList);
             
             //Azure DevOps test parameters don't allow white spaces.
             for (var index = 0; index < testParameters.Param.Count; index++)
@@ -248,14 +252,14 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return stringWriter.ToString();
         }
         
-        private TestParameters GetTestParameters(Scenario scenario)
+        private TestParameters GetTestParameters(IEnumerable<Examples> examples)
         {
-            var examples = scenario.Examples.ToList();
-            if (!examples.Any()) throw new ArgumentNullException(nameof(scenario));
+            var examplesList = examples.ToList();
+            if (!examplesList.Any()) return null;
 
             var testParameters = new TestParameters {Param = new List<Param>()};
             
-            foreach (var headerCell in examples.First().TableHeader.Cells)
+            foreach (var headerCell in examplesList.First().TableHeader.Cells)
             {
                 testParameters.Param.Add(new Param{Name = headerCell.Value});
             }
@@ -263,16 +267,16 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return testParameters;
         }
         
-        private string GetXmlTestParametersValues(Scenario scenario)
+        private string GetXmlTestParametersValues(IEnumerable<Examples> examples)
         {
-            var examples = scenario.Examples.ToList();
-            if (!examples.Any()) throw new ArgumentNullException(nameof(scenario));
+            var examplesList = examples.ToList();
+            if (!examplesList.Any()) throw new ArgumentNullException(nameof(examples));
             
             var xmlSerializer = new XmlSerializer(typeof(DataSet));
             var dataSet = new DataSet("NewDataSet");
             var dataTable = new System.Data.DataTable("Table1");
             
-            var testParameters = GetTestParameters(scenario);
+            var testParameters = GetTestParameters(examplesList);
             
             foreach (var param in testParameters.Param)
             {
@@ -282,7 +286,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             }
             dataSet.Tables.Add(dataTable);
 
-            foreach (var example in examples)
+            foreach (var example in examplesList)
             {
                 foreach (var tableRow in example.TableBody)
                 {
