@@ -103,7 +103,7 @@ The GherkinSyncTool scans the files in the specified folder for the * .feature f
 management system to create or update test cases. Received test ID will be populated into the feature files as tags for
 the following synchronization.
 Test management system for synchronization is selected by the presence of a particular test management system settings.
-To add a new test management system for synchronization implement the ISynchronizer interface.
+To add a new test management system for synchronization, implement the ISynchronizer interface.
 
 ![Architecture](Docs/Architecture.png)
 
