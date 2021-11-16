@@ -5,7 +5,7 @@ Copyright (c) 2021 Quantori.
 Quantori GherkinSyncTool is an open-source console application that synchronizes tests scenarios
 in [Gherkin syntax](https://cucumber.io/docs/gherkin/) (also known as feature files) with a test management system.
 
-![Architecture](Docs/Architecture.png)
+![Diagram](Docs/Diagram.png)
 
 ## Supported test management systems
 
@@ -103,7 +103,9 @@ The GherkinSyncTool scans the files in the specified folder for the * .feature f
 management system to create or update test cases. Received test ID will be populated into the feature files as tags for
 the following synchronization.
 Test management system for synchronization is selected by the presence of a particular test management system settings.
-![Diagram](Docs/Diagram.png)
+To add a new test management system for synchronization implement the ISynchronizer interface.
+
+![Architecture](Docs/Architecture.png)
 
 ## History
 
