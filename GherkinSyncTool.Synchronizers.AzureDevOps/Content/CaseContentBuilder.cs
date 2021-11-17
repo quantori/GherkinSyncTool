@@ -186,15 +186,30 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters)
         {
             if (testParameters is null) return stringWithParameters;
-            //Azure DevOps test parameters don't allow white spaces in a middle and required a whitespace after the parameter.
+            
             foreach (var param in testParameters.Param)
             {
-                stringWithParameters =
-                    stringWithParameters.Replace($"<{param.Name}>", $"<span style=\"color:LightSeaGreen\">@{param.Name.Replace(" ", string.Empty)}</span> ");
+                var parameter = $"<{param.Name}>";
+                
+                //Azure DevOps test parameters required a whitespace or non-word character at the end. Parameters that go one by one without space are not permissible.
+                var indexOfParameter = stringWithParameters.IndexOf(parameter, StringComparison.InvariantCulture);
+                if (indexOfParameter == -1) continue;
+
+                var theNextCharacterAfterParameter = indexOfParameter + parameter.Length;
+                
+                //In case line stringWithParameters contains only a single parameter
+                if (theNextCharacterAfterParameter < stringWithParameters.Length)
+                {
+                    if (!Regex.IsMatch(stringWithParameters[theNextCharacterAfterParameter].ToString(), @"\W+|\s") || stringWithParameters[theNextCharacterAfterParameter].Equals('<'))
+                    {
+                        stringWithParameters = stringWithParameters.Insert(theNextCharacterAfterParameter, " ");
+                    }
+                }
+
+                //Azure DevOps test parameters don't allow white spaces.
+                stringWithParameters = stringWithParameters.Replace($"<{param.Name}>", $"<span style=\"color:LightSeaGreen\">@{param.Name.Replace(" ", string.Empty)}</span>");
             }
             
-            //Remove duplicated whitespaces
-            stringWithParameters = Regex.Replace(stringWithParameters, @"[ ]{2,}", " ");
             return stringWithParameters;
         }
 
