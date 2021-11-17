@@ -1,11 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Gherkin.Ast;
 using GherkinSyncTool.Models.Configuration;
 
 namespace GherkinSyncTool.Models.Utils
 {
-    public static class GherkinFileHelper
+    public static class GherkinHelper
     {
         private static readonly GherkinSyncToolConfig GherkinSyncToolConfig = ConfigurationManager.GetConfiguration<GherkinSyncToolConfig>();
 
@@ -34,6 +36,12 @@ namespace GherkinSyncTool.Models.Utils
             allTags.RemoveAll(tag => tag.Name.Contains(GherkinSyncToolConfig.TagIdPrefix));
 
             return allTags;
+        }
+
+        public static ulong GetTagIdUlong(Tag tagId)
+        {
+            if (tagId is null) throw new ArgumentNullException(nameof(tagId));
+            return ulong.Parse(Regex.Match(tagId.Name, @"\d+").Value);
         }
     }
 }

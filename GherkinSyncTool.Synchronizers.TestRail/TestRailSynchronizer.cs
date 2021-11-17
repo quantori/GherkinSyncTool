@@ -1,12 +1,11 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using Gherkin.Ast;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
+using GherkinSyncTool.Models.Utils;
 using GherkinSyncTool.Synchronizers.TestRail.Client;
 using GherkinSyncTool.Synchronizers.TestRail.Content;
 using GherkinSyncTool.Synchronizers.TestRail.Exceptions;
@@ -81,7 +80,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                     // Update scenarios that have tag id
                     if (tagId is not null)
                     {
-                        var caseId = UInt64.Parse(Regex.Match(tagId.Name, @"\d+").Value);
+                        var caseId = GherkinHelper.GetTagIdUlong(tagId);
                         featureFilesTagIds.Add(caseId);
                             
                         var testRailCase = testRailCases.FirstOrDefault(c => c.Id == caseId);

@@ -4,6 +4,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using Gherkin.Ast;
 using GherkinSyncTool.Models;
@@ -137,7 +138,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
                 for (var index = 0; index < backgroundSteps.Count; index++)
                 {
-                    backgroundSteps[index] = $"Background: {backgroundSteps[index]}";
+                    backgroundSteps[index] = $"<span style=\"color:RoyalBlue\">Background:</span> {backgroundSteps[index]}";
                 }
 
                 return backgroundSteps.Concat(scenarioSteps).ToList();
@@ -151,21 +152,21 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             var resultSteps = new List<string>();
             foreach (var step in steps)
             {
-                var keywordFormatted = $"<span style=\"color:RoyalBlue\">{step.Keyword.Trim()} </span>";
+                var keywordFormatted = $"<span style=\"color:RoyalBlue\">{step.Keyword.Trim()}</span>";
 
                 var stepFormatted = FormatTestParameters(testParameters, step.Text);
                 
-                var fullStep = keywordFormatted + stepFormatted;
+                var fullStep = $"{keywordFormatted} {stepFormatted}";
                 
                 if (step.Argument is DocString docString)
                 {
-                    var stepArgument = FormatTestParameters(testParameters, docString.Content);
-                    fullStep += Environment.NewLine + stepArgument;
+                    var stepArgument = FormatMultilineArgument(docString.Content, testParameters);
+                    fullStep += stepArgument;
                 }
                 
                 if (step.Argument is DataTable table)
                 {
-                    fullStep += Environment.NewLine + BuildTable(table.Rows.ToList(), testParameters);
+                    fullStep += BuildTable(table.Rows.ToList(), testParameters);
                 }
 
                 resultSteps.Add(fullStep);
@@ -174,31 +175,39 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return resultSteps;
         }
 
+        private string FormatMultilineArgument(string multilineArgument, TestParameters testParameters)
+        {
+            var multilineArgumentFormatted = FormatTestParameters(testParameters, multilineArgument);
+            multilineArgumentFormatted =  Regex.Replace(multilineArgumentFormatted, @"\n|\r\n", "<br>");   
+            
+            return $"<p>{multilineArgumentFormatted}</p>";
+        }
+
         private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters)
         {
             if (testParameters is null) return stringWithParameters;
-            //Azure DevOps test parameters don't allow white spaces.
+            //Azure DevOps test parameters don't allow white spaces in a middle and required a whitespace after the parameter.
             foreach (var param in testParameters.Param)
             {
                 stringWithParameters =
-                    stringWithParameters.Replace($"<{param.Name}>", $"<{param.Name.Replace(" ", string.Empty)}>");
+                    stringWithParameters.Replace($"<{param.Name}>", $"<span style=\"color:LightSeaGreen\">@{param.Name.Replace(" ", string.Empty)}</span> ");
             }
             
-            stringWithParameters = stringWithParameters.Replace("<","<span style=\"color:LightSeaGreen\">@").Replace(">","</span>");
-
+            //Remove duplicated whitespaces
+            stringWithParameters = Regex.Replace(stringWithParameters, @"[ ]{2,}", " ");
             return stringWithParameters;
         }
 
         private string BuildTable(List<TableRow> tableRows, TestParameters testParameters)
         {
             var table = new StringBuilder();
-            table.Append("<table style=\"width: 100%;\">");
+            table.Append("<br><table style=\"width: 100%;\">");
             
             //Header
             table.Append("<tr>");
             foreach (var cell in tableRows.First().Cells)
             {
-                table.Append($"<th style=\"border: 1px solid RoyalBlue; font-weight: bold;\">{cell.Value}</th>");
+                table.Append($"<th style=\"border: 1px solid RoyalBlue; font-weight: bold;\">{FormatTestParameters(testParameters, cell.Value)}</th>");
             }
             table.Append("</tr>");
             
@@ -309,7 +318,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         
         private string ConvertToStringTags(Scenario scenario, IFeatureFile featureFile)
         {
-            var allTags = GherkinFileHelper.GetAllTags(scenario, featureFile);
+            var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
 
             return allTags.Any() ? string.Join("; ", allTags.Select(tag => tag.Name.Substring(1))) : null;
         }
