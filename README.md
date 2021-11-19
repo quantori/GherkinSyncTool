@@ -57,7 +57,7 @@ below. The template should not contain any required fields. An existing template
 
 GherkinSyncTool can be configured in three ways. The priority corresponds to the list order.
 
-1. appsettings.json. [Example](GherkinSyncTool\appsettings.json).
+1. appsettings.json. [Example](GherkinSyncTool/appsettings.json).
 2. Environment variables.
 3. Command-line arguments.
 
