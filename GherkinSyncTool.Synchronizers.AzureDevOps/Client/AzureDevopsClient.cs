@@ -20,6 +20,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
         private readonly AzureDevopsSettings _azureDevopsSettings = ConfigurationManager.GetConfiguration<AzureDevopsConfigs>().AzureDevopsSettings;
         private readonly VssConnection _connection;
         private readonly Context _context;
+        //Azure DevOps batch request limitation
+        const int BatchRequestLimit = 200;
 
         public AzureDevopsClient(Context context)
         {
@@ -29,22 +31,38 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             _context = context;
         }
 
-        public WitBatchRequest CreateTestCaseBatchRequest(JsonPatchDocument patchDocument)
+        public WitBatchRequest BuildCreateTestCaseBatchRequest(JsonPatchDocument patchDocument)
         {
             var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
             return workItemTrackingHttpClient.CreateWorkItemBatchRequest(_azureDevopsSettings.Project, WorkItemTypes.TestCase, patchDocument, false, false);
         }
+        
+        public WitBatchRequest BuildUpdateTestCaseBatchRequest(int id, JsonPatchDocument patchDocument)
+        {
+            var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
+            return workItemTrackingHttpClient.CreateWorkItemBatchRequest(id, patchDocument, false, false);
+        }
+        
+        public IEnumerable<int> GetAllTestCasesIds()
+        {
+            var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
+            var wiql = new Wiql
+            {
+                Query =  $@"Select [{WorkItemFields.Id}] From WorkItems Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'"
+            };
+            
+            var worItemsIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
+
+            return worItemsIds.WorkItems.Select(reference => reference.Id);
+        }
 
         public List<WorkItem> ExecuteWorkItemBatch(List<WitBatchRequest> request)
         {
-            //Azure DevOps batch request limitation
-            const int batchRequestLimit = 200;
-            
             var result = new List<WorkItem>();
             
-            if (request.Count > batchRequestLimit)
+            if (request.Count > BatchRequestLimit)
             {
-                var requestChunks = request.Batch(batchRequestLimit);
+                var requestChunks = request.Batch(BatchRequestLimit);
 
                 foreach (var requestChunk in requestChunks)
                 {
@@ -53,6 +71,40 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
                 return result;
             }
             return SendWorkItemBatch(request);
+        }
+
+        public List<WorkItem> GetWorkItemsBatch(IEnumerable<int> ids, IEnumerable<string> fields = null)
+        {
+            var result = new List<WorkItem>();
+            var idsList = ids.ToList();
+            
+            if (idsList.Count > BatchRequestLimit)
+            {
+                var requestChunks = idsList.Batch(BatchRequestLimit);
+
+                foreach (var requestChunk in requestChunks)
+                {
+                    result.AddRange(GetWorkItems(requestChunk, fields));
+                }
+                return result;
+            }
+            return GetWorkItems(idsList);
+        }
+
+        private List<WorkItem> GetWorkItems(IEnumerable<int> ids, IEnumerable<string> fields = null)
+        {
+            var workItemsList = new List<WorkItem>();
+            try
+            {
+                var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
+                workItemsList = workItemTrackingHttpClient.GetWorkItemsAsync(_azureDevopsSettings.Project, ids, fields).Result;
+            }
+            catch(Exception e)
+            {
+                Log.Error(e, "Error executing get work items request");
+                _context.IsRunSuccessful = false;
+            }
+            return workItemsList;
         }
 
         private List<WorkItem> SendWorkItemBatch(List<WitBatchRequest> request)
@@ -68,12 +120,20 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
                     if (witBatchResponse.Code == 200)
                     {
                         var workItem = witBatchResponse.ParseBody<WorkItem>();
-                        result.Add(workItem);
-                        Log.Info($"Created: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");
+                        
+                        if (workItem.Rev == 1)
+                        {
+                            result.Add(workItem);
+                            Log.Info($"Created: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");    
+                        }
+                        else
+                        {
+                            Log.Info($"Updated: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");    
+                        }
                     }
                     else
                     {
-                        Log.Error($"Something went wrong with creating the test case. Status code: {witBatchResponse.Code}{Environment.NewLine}Body: {witBatchResponse.Body}");
+                        Log.Error($"Something went wrong with the test case synchronization. Status code: {witBatchResponse.Code}{Environment.NewLine}Body: {witBatchResponse.Body}");
                         _context.IsRunSuccessful = false;
                     }
                 }

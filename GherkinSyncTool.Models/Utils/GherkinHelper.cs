@@ -43,5 +43,12 @@ namespace GherkinSyncTool.Models.Utils
             if (tagId is null) throw new ArgumentNullException(nameof(tagId));
             return ulong.Parse(Regex.Match(tagId.Name, @"\d+").Value);
         }
+
+        public static string FormatTagId(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id)) throw new ArgumentNullException(nameof(id));
+            
+            return GherkinSyncToolConfig.FormattingSettings.TagIndentation + GherkinSyncToolConfig.TagIdPrefix + id;
+        }
     }
 }

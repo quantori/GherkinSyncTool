@@ -28,9 +28,9 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             _testBaseHelper = testBaseHelper;
         }
 
-        public JsonPatchDocument BuildTestCaseDocument(Scenario scenario, IFeatureFile featureFile, int id)
+        public JsonPatchDocument BuildTestCaseDocument(Scenario scenario, IFeatureFile featureFile, int? id = null)
         {
-            JsonPatchDocument patchDocument = new JsonPatchDocument
+            var patchDocument = new JsonPatchDocument
             {
                 new()
                 {
@@ -43,21 +43,29 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.Description}",
                     Value = BuildDescription(scenario, featureFile)
-                },
-                new()
-                {
-                    Operation = Operation.Add,
-                    Path = $"/{WorkItemFields.Id}",
-                    Value = id
                 }
             };
-
+            
+            AddIdToJsonDocument(patchDocument, id);
             AddAreaPathToJsonDocument(patchDocument);
             AddTestStepsToJsonDocument(patchDocument, scenario, featureFile);
             AddTestTagsToJsonDocument(patchDocument, scenario, featureFile);
             AddParametersToJsonDocument(patchDocument, scenario);
 
             return patchDocument;
+        }
+
+        private void AddIdToJsonDocument(JsonPatchDocument patchDocument, int? id)
+        {
+            if (id is null) return;
+            {
+                patchDocument.Add(new JsonPatchOperation
+                {
+                    Operation = Operation.Add,
+                    Path = $"/{WorkItemFields.Id}",
+                    Value = id
+                });
+            }
         }
 
         private void AddAreaPathToJsonDocument(JsonPatchDocument patchDocument)

@@ -71,7 +71,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                         } 
                         
                         var lineNumberToInsert = scenario.Location.Line - 1 + insertedTagIds;
-                        var formattedTagId = _gherkinSyncToolConfig.FormattingSettings.TagIndentation + _gherkinSyncToolConfig.TagIdPrefix + addCaseResponse.Id;
+                        var formattedTagId = GherkinHelper.FormatTagId(addCaseResponse.Id.ToString());
                         TextFilesEditMethods.InsertLineToTheFile(featureFile.AbsolutePath, lineNumberToInsert,
                             formattedTagId);
                         insertedTagIds++;
@@ -97,7 +97,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                                 _context.IsRunSuccessful = false;
                                 continue;
                             }
-                            var formattedTagId = _gherkinSyncToolConfig.FormattingSettings.TagIndentation + _gherkinSyncToolConfig.TagIdPrefix + testRailCase.Id;
+                            var formattedTagId = GherkinHelper.FormatTagId(testRailCase.Id.ToString());
                             TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath,
                                 tagId.Location.Line - 1 + insertedTagIds, formattedTagId);
                         }
