@@ -98,74 +98,83 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
 
             if (testCasesToUpdateFromTheFeatureFiles.Any())
             {
-                //Compare test cases from feature files and azure DevOps to add changed ones for the update.
-                var casesToUpdateFromTheAzure = _azureDevopsClient.GetWorkItemsBatch(testCasesToUpdateFromTheFeatureFiles.Keys);
-
-                foreach (var (id, witBatchRequest) in testCasesToUpdateFromTheFeatureFiles)
-                {
-                    try
-                    {
-                        var witBatchRequestBody = JsonConvert.DeserializeObject<List<WorkItemBatchRequestBody>>(witBatchRequest.Body);
-                        if (witBatchRequestBody is null) throw new NullReferenceException();
-                        
-                        var fieldsToUpdateFeatureFile = new Dictionary<string, string>();
-                        
-                        foreach (var item in witBatchRequestBody)
-                        {
-                            fieldsToUpdateFeatureFile.Add(item.Path.Replace("/fields/", ""), item.Value);
-                        }
-
-                        var fieldsToUpdateAzure = casesToUpdateFromTheAzure.First(item => item.Id == id).Fields;
-
-                        if (IsDictionariesSimilar(fieldsToUpdateFeatureFile, fieldsToUpdateAzure.ToDictionary(k => k.Key, k => k.Value.ToString())))
-                        {
-                            testCasesToUpdateFromTheFeatureFiles.Remove(id);
-                            Log.Info($"Up-to-date: [{id}] {fieldsToUpdateFeatureFile[$"{WorkItemFields.Title}"]}");
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Error(e, "Something went wrong with the test case update");
-                        _context.IsRunSuccessful = false;
-                    }
-
-                }
+                UpdateTestCases(testCasesToUpdateFromTheFeatureFiles);
+                witBatchRequests.AddRange(testCasesToUpdateFromTheFeatureFiles.Values);
             }
-
-            witBatchRequests.AddRange(testCasesToUpdateFromTheFeatureFiles.Values);
 
             if (witBatchRequests.Any())
             {
-                List<WorkItem> workItems;
-                try
-                {
-                    workItems = _azureDevopsClient.ExecuteWorkItemBatch(witBatchRequests);
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e, "The test cases have not been synchronized");
-                    throw;
-                }
-
-                foreach (var workItem in workItems)
-                {
-                    //Rev = 1 means that a test case has been created
-                    if (workItem.Rev == 1)
-                    {
-                        try
-                        {
-                            FeatureFileUtils.InsertTagIdToTheFeatureFile(workItem);
-                        }
-                        catch (Exception e)
-                        {
-                            Log.Error(e, $"Something went wrong with the writing ID to the feature file. Test case id: {workItem.Id}");
-                            _context.IsRunSuccessful = false;
-                        }
-                    }
-                }
+                SynchronizeTestCases(witBatchRequests);
             }
 
             Log.Debug(@$"Synchronization with AzureDevops finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
+        }
+
+        private void SynchronizeTestCases(List<WitBatchRequest> witBatchRequests)
+        {
+            List<WorkItem> workItems;
+            try
+            {
+                workItems = _azureDevopsClient.ExecuteWorkItemBatch(witBatchRequests);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "The test cases have not been synchronized");
+                throw;
+            }
+
+            foreach (var workItem in workItems)
+            {
+                //Rev = 1 means that a test case has been created
+                if (workItem.Rev == 1)
+                {
+                    try
+                    {
+                        FeatureFileUtils.InsertTagIdToTheFeatureFile(workItem);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error(e, $"Something went wrong with the writing ID to the feature file. Test case id: {workItem.Id}");
+                        _context.IsRunSuccessful = false;
+                    }
+                }
+            }
+        }
+
+        private void UpdateTestCases(Dictionary<int, WitBatchRequest> testCasesToUpdateFromTheFeatureFiles)
+        {
+            //Compare test cases from feature files and azure DevOps to update only changed ones.
+            var testCasesToUpdateFromTheAzure = _azureDevopsClient.GetWorkItemsBatch(testCasesToUpdateFromTheFeatureFiles.Keys);
+
+            foreach (var (id, witBatchRequest) in testCasesToUpdateFromTheFeatureFiles)
+            {
+                try
+                {
+                    var witBatchRequestBody =
+                        JsonConvert.DeserializeObject<List<WorkItemBatchRequestBody>>(witBatchRequest.Body);
+                    if (witBatchRequestBody is null) throw new NullReferenceException();
+
+                    var fieldsToUpdateFeatureFile = new Dictionary<string, string>();
+
+                    foreach (var item in witBatchRequestBody)
+                    {
+                        fieldsToUpdateFeatureFile.Add(item.Path.Replace("/fields/", ""), item.Value);
+                    }
+
+                    var fieldsToUpdateAzure = testCasesToUpdateFromTheAzure.First(item => item.Id == id).Fields;
+
+                    if (IsDictionariesSimilar(fieldsToUpdateFeatureFile, fieldsToUpdateAzure.ToDictionary(k => k.Key, k => k.Value.ToString())))
+                    {
+                        testCasesToUpdateFromTheFeatureFiles.Remove(id);
+                        Log.Info($"Up-to-date: [{id}] {fieldsToUpdateFeatureFile[$"{WorkItemFields.Title}"]}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e, "Something went wrong with the test case update");
+                    _context.IsRunSuccessful = false;
+                }
+            }
         }
 
         private static bool IsDictionariesSimilar(Dictionary<string, string> dictionaryA, IDictionary<string, string> dictionaryB)
