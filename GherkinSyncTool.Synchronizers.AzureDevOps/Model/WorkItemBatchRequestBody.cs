@@ -3,7 +3,7 @@
     /// <summary>
     /// Azure DevOps work item request body
     /// </summary>
-    public class WitBatchRequestBody
+    public class WorkItemBatchRequestBody
     {
         public string Path { get; set; }
         public string Value { get; set; }

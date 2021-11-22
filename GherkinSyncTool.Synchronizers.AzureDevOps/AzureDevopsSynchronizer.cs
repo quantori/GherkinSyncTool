@@ -102,7 +102,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                 {
                     try
                     {
-                        var witBatchRequestBody = JsonConvert.DeserializeObject<List<WitBatchRequestBody>>(witBatchRequest.Body);
+                        var witBatchRequestBody = JsonConvert.DeserializeObject<List<WorkItemBatchRequestBody>>(witBatchRequest.Body);
                         if (witBatchRequestBody is null) throw new NullReferenceException();
                         
                         var fieldsToUpdateFeatureFile = new Dictionary<string, string>();
