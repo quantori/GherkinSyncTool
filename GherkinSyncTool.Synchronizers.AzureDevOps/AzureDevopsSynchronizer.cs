@@ -163,7 +163,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
 
                     var fieldsToUpdateAzure = testCasesToUpdateFromTheAzure.First(item => item.Id == id).Fields;
 
-                    if (IsDictionariesSimilar(fieldsToUpdateFeatureFile, fieldsToUpdateAzure.ToDictionary(k => k.Key, k => k.Value.ToString())))
+                    if (IsTestCaseFieldsSimilar(fieldsToUpdateFeatureFile, fieldsToUpdateAzure.ToDictionary(k => k.Key, k => k.Value.ToString())))
                     {
                         testCasesToUpdateFromTheFeatureFiles.Remove(id);
                         Log.Info($"Up-to-date: [{id}] {fieldsToUpdateFeatureFile[$"{WorkItemFields.Title}"]}");
@@ -177,16 +177,31 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
             }
         }
 
-        private static bool IsDictionariesSimilar(Dictionary<string, string> dictionaryA, IDictionary<string, string> dictionaryB)
+        private static bool IsTestCaseFieldsSimilar(Dictionary<string, string> dictionaryA,
+            IDictionary<string, string> dictionaryB)
         {
             var isSimilar = true;
-            foreach (var fieldToUpdateFeatureFile in dictionaryA)
+            foreach (var (fieldKey, fieldValue) in dictionaryA)
             {
-                var fieldToUpdateFeatureFileNormalized = Regex.Replace(fieldToUpdateFeatureFile.Value, @"\s", "");
-                var fieldsToUpdateAzureNormalized = Regex.Replace(dictionaryB[fieldToUpdateFeatureFile.Key], @"\s", "");
+                var fieldANormalized = Regex.Replace(fieldValue, @"\s", "");
+                var fieldBNormalized = Regex.Replace(dictionaryB[fieldKey], @"\s", "");
+                if (string.Equals(fieldKey, WorkItemFields.Tags))
+                {
+                    var separator = ";";
+                    var tagsA = fieldANormalized.Split(separator).ToList();
+                    tagsA.Sort();
+                    var tagsB = fieldBNormalized.Split(separator).ToList();
+                    tagsB.Sort();
 
-                if (!string.Equals(fieldToUpdateFeatureFileNormalized, fieldsToUpdateAzureNormalized,
-                    StringComparison.OrdinalIgnoreCase))
+                    if (!tagsA.SequenceEqual(tagsB))
+                    {
+                        isSimilar = false;
+                        break;
+                    }
+                    continue;
+                }
+
+                if (!string.Equals(fieldANormalized, fieldBNormalized, StringComparison.OrdinalIgnoreCase))
                 {
                     isSimilar = false;
                     break;
