@@ -11,6 +11,7 @@ using GherkinSyncTool.Models.Utils;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Client;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Content;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Model;
+using GherkinSyncTool.Synchronizers.AzureDevOps.Utils;
 using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
 using Newtonsoft.Json;
 using NLog;
@@ -153,7 +154,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                     {
                         try
                         {
-                            Utils.TextFilesEditMethods.InsertTagIdToTheFeatureFile(workItem);
+                            FeatureFileUtils.InsertTagIdToTheFeatureFile(workItem);
                         }
                         catch (Exception e)
                         {
