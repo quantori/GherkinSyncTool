@@ -46,14 +46,16 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
         public IEnumerable<int> GetAllTestCasesIds()
         {
             var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
+            
+            // wiql - Work Item Query Language
             var wiql = new Wiql
             {
                 Query =  $@"Select [{WorkItemFields.Id}] From WorkItems Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'"
             };
             
-            var worItemsIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
+            var workItemIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
 
-            return worItemsIds.WorkItems.Select(reference => reference.Id);
+            return workItemIds.WorkItems.Select(reference => reference.Id);
         }
 
         public List<WorkItem> ExecuteWorkItemBatch(List<WitBatchRequest> request)
