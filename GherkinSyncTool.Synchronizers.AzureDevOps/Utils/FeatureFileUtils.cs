@@ -12,7 +12,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Utils
         private static readonly GherkinSyncToolConfig GherkinSyncToolConfig = ConfigurationManager.GetConfiguration<GherkinSyncToolConfig>();
        
         /// <summary>
-        /// File path takes form test case description and writes to the scenario
+        /// File path takes from test case description and writes to the scenario
         /// </summary>
         /// <param name="workItem"></param>
         /// <exception cref="DirectoryNotFoundException"></exception>
