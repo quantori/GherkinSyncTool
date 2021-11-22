@@ -27,7 +27,7 @@ namespace GherkinSyncTool.CommandLineOptions
             if (errs.IsVersion())
             {
                 Log.Info(Program.Version);
-                Environment.Exit(1);
+                Environment.Exit(0);
             }
 
             Log.Info(HelpText.AutoBuild(parserResult, h =>
@@ -38,7 +38,7 @@ namespace GherkinSyncTool.CommandLineOptions
                 h.AddEnumValuesToHelpText = true;
                 return h;
             }));
-            Environment.Exit(1);
+            Environment.Exit(0);
         }
     }
 }
