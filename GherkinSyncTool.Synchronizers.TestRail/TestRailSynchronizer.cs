@@ -1,12 +1,11 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using Gherkin.Ast;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
+using GherkinSyncTool.Models.Utils;
 using GherkinSyncTool.Synchronizers.TestRail.Client;
 using GherkinSyncTool.Synchronizers.TestRail.Content;
 using GherkinSyncTool.Synchronizers.TestRail.Exceptions;
@@ -72,7 +71,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                         } 
                         
                         var lineNumberToInsert = scenario.Location.Line - 1 + insertedTagIds;
-                        var formattedTagId = _gherkinSyncToolConfig.FormattingSettings.TagIndentation + _gherkinSyncToolConfig.TagIdPrefix + addCaseResponse.Id;
+                        var formattedTagId = GherkinHelper.FormatTagId(addCaseResponse.Id.ToString());
                         TextFilesEditMethods.InsertLineToTheFile(featureFile.AbsolutePath, lineNumberToInsert,
                             formattedTagId);
                         insertedTagIds++;
@@ -81,7 +80,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                     // Update scenarios that have tag id
                     if (tagId is not null)
                     {
-                        var caseId = UInt64.Parse(Regex.Match(tagId.Name, @"\d+").Value);
+                        var caseId = GherkinHelper.GetTagIdUlong(tagId);
                         featureFilesTagIds.Add(caseId);
                             
                         var testRailCase = testRailCases.FirstOrDefault(c => c.Id == caseId);
@@ -98,7 +97,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                                 _context.IsRunSuccessful = false;
                                 continue;
                             }
-                            var formattedTagId = _gherkinSyncToolConfig.FormattingSettings.TagIndentation + _gherkinSyncToolConfig.TagIdPrefix + testRailCase.Id;
+                            var formattedTagId = GherkinHelper.FormatTagId(testRailCase.Id.ToString());
                             TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath,
                                 tagId.Location.Line - 1 + insertedTagIds, formattedTagId);
                         }
