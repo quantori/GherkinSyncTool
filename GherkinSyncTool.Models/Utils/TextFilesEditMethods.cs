@@ -48,6 +48,12 @@ namespace GherkinSyncTool.Models.Utils
             File.WriteAllLines(path, featureFileLines);
         }
         
+        /// <summary>
+        /// Insert a new line to a file before a line that matches a regex
+        /// </summary>
+        /// <param name="path">Text file path.</param>
+        /// <param name="lineRegex">Line regex before which a new line will be pasted.</param>
+        /// <param name="text">A new line to paste.</param>
         public static void InsertLineToTheFileRegex(string path, Regex lineRegex, string text)
         {
             try

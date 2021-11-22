@@ -29,7 +29,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Utils
             var fullPath = baseDirectory.Parent.FullName + Path.DirectorySeparatorChar + relativePath;
 
             var title = (string)workItem.Fields[WorkItemFields.Title];
-            var scenarioRegex = new Regex($"Scenario.*:.*{Regex.Escape(title)}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            var scenarioRegex = new Regex($"Scenario.*:.*{Regex.Escape(title)}", RegexOptions.IgnoreCase);
 
             var formattedTagId = GherkinHelper.FormatTagId(workItem.Id.ToString());
             TextFilesEditMethods.InsertLineToTheFileRegex(fullPath, scenarioRegex, formattedTagId);
