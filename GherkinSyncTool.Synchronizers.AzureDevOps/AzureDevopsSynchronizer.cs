@@ -84,8 +84,10 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                             Log.Warn($"Test case with id {caseId} not found. Missing case will be recreated");
                             var testCasePatchDocument = _caseContentBuilder.BuildTestCaseDocument(scenario, featureFile, patchDocumentId--);
                             var testCaseBatchRequest = _azureDevopsClient.BuildCreateTestCaseBatchRequest(testCasePatchDocument);
+
+                            var tagIdRegexPattern = $@"\s*{GherkinHelper.FormatTagId(caseId.ToString()).Trim()}\s*";
                             
-                            TextFilesEditMethods.ReplaceTextInTheFileRegex(featureFile.AbsolutePath,$@"\s*{GherkinHelper.FormatTagId(caseId.ToString()).Trim()}\s*","");
+                            TextFilesEditMethods.ReplaceTextInTheFileRegex(featureFile.AbsolutePath, tagIdRegexPattern,"");
                             
                             witBatchRequests.Add(testCaseBatchRequest);
                         }
