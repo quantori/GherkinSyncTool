@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+[3.5.1] - 2021-11-22
+### Changed
+- Azure DevOps: test cases tags update fix.
+- Azure DevOps: description line breaks added.
+
+### Added
+- Azure DevOps: print work item info when Azure DevOps returns a non-success status code.
+
 [3.5.0] - 2021-11-19
 ### Added
 - Azure DevOps scenario content: scenario updates.

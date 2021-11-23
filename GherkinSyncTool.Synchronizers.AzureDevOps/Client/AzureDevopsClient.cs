@@ -17,9 +17,14 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
     public class AzureDevopsClient
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
-        private readonly AzureDevopsSettings _azureDevopsSettings = ConfigurationManager.GetConfiguration<AzureDevopsConfigs>().AzureDevopsSettings;
+
+        private readonly AzureDevopsSettings _azureDevopsSettings =
+            ConfigurationManager.GetConfiguration<AzureDevopsConfigs>().AzureDevopsSettings;
+
         private readonly VssConnection _connection;
+
         private readonly Context _context;
+
         //Azure DevOps batch request limitation
         const int BatchRequestLimit = 200;
 
@@ -34,25 +39,27 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
         public WitBatchRequest BuildCreateTestCaseBatchRequest(JsonPatchDocument patchDocument)
         {
             var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
-            return workItemTrackingHttpClient.CreateWorkItemBatchRequest(_azureDevopsSettings.Project, WorkItemTypes.TestCase, patchDocument, false, false);
+            return workItemTrackingHttpClient.CreateWorkItemBatchRequest(_azureDevopsSettings.Project,
+                WorkItemTypes.TestCase, patchDocument, false, false);
         }
-        
+
         public WitBatchRequest BuildUpdateTestCaseBatchRequest(int id, JsonPatchDocument patchDocument)
         {
             var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
             return workItemTrackingHttpClient.CreateWorkItemBatchRequest(id, patchDocument, false, false);
         }
-        
+
         public IEnumerable<int> GetAllTestCasesIds()
         {
             var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
-            
+
             // wiql - Work Item Query Language
             var wiql = new Wiql
             {
-                Query =  $@"Select [{WorkItemFields.Id}] From WorkItems Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'"
+                Query =
+                    $@"Select [{WorkItemFields.Id}] From WorkItems Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'"
             };
-            
+
             var workItemIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
 
             return workItemIds.WorkItems.Select(reference => reference.Id);
@@ -61,7 +68,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
         public List<WorkItem> ExecuteWorkItemBatch(List<WitBatchRequest> request)
         {
             var result = new List<WorkItem>();
-            
+
             if (request.Count > BatchRequestLimit)
             {
                 var requestChunks = request.Batch(BatchRequestLimit);
@@ -70,8 +77,10 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
                 {
                     result.AddRange(SendWorkItemBatch(requestChunk.ToList()));
                 }
+
                 return result;
             }
+
             return SendWorkItemBatch(request);
         }
 
@@ -79,7 +88,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
         {
             var result = new List<WorkItem>();
             var idsList = ids.ToList();
-            
+
             if (idsList.Count > BatchRequestLimit)
             {
                 var requestChunks = idsList.Batch(BatchRequestLimit);
@@ -88,8 +97,10 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
                 {
                     result.AddRange(GetWorkItems(requestChunk, fields));
                 }
+
                 return result;
             }
+
             return GetWorkItems(idsList);
         }
 
@@ -99,13 +110,15 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             try
             {
                 var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
-                workItemsList = workItemTrackingHttpClient.GetWorkItemsAsync(_azureDevopsSettings.Project, ids, fields).Result;
+                workItemsList = workItemTrackingHttpClient.GetWorkItemsAsync(_azureDevopsSettings.Project, ids, fields)
+                    .Result;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Log.Error(e, "Error executing get work items request");
                 _context.IsRunSuccessful = false;
             }
+
             return workItemsList;
         }
 
@@ -117,27 +130,29 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
                 var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
                 var workItemBatchResponseList = workItemTrackingHttpClient.ExecuteBatchRequest(request).Result;
 
-                foreach (var witBatchResponse in workItemBatchResponseList)
+                for (var i = 0; i < workItemBatchResponseList.Count; i++)
                 {
-                    if (witBatchResponse.Code == 200)
+                    var witBatchResponse = workItemBatchResponseList[i];
+                    
+                    if (witBatchResponse.Code != 200)
                     {
-                        var workItem = witBatchResponse.ParseBody<WorkItem>();
-                        
-                        if (workItem.Rev == 1)
-                        {
-                            result.Add(workItem);
-                            Log.Info($"Created: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");    
-                        }
-                        else
-                        {
-                            Log.Info($"Updated: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");    
-                        }
-                    }
-                    else
-                    {
-                        Log.Error($"Something went wrong with the test case synchronization. Status code: {witBatchResponse.Code}{Environment.NewLine}Body: {witBatchResponse.Body}");
+                        Log.Error($"Something went wrong with the test case synchronization. Title: {request[i].GetFields()[WorkItemFields.Title]}");
+                        Log.Error($"Status code: {witBatchResponse.Code}{Environment.NewLine}Body: {witBatchResponse.Body}");
+
                         _context.IsRunSuccessful = false;
+                        continue;
                     }
+
+                    var workItem = witBatchResponse.ParseBody<WorkItem>();
+                    result.Add(workItem);
+
+                    if (workItem.Rev != 1)
+                    {
+                        Log.Info($"Updated: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");
+                        continue;
+                    }
+                    
+                    Log.Info($"Created: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");
                 }
             }
             catch (Exception e)
