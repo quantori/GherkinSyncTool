@@ -150,17 +150,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
             {
                 try
                 {
-                    var witBatchRequestBody =
-                        JsonConvert.DeserializeObject<List<WorkItemBatchRequestBody>>(witBatchRequest.Body);
-                    if (witBatchRequestBody is null) throw new NullReferenceException();
-
-                    var fieldsToUpdateFeatureFile = new Dictionary<string, string>();
-
-                    foreach (var item in witBatchRequestBody)
-                    {
-                        fieldsToUpdateFeatureFile.Add(item.Path.Replace("/fields/", ""), item.Value);
-                    }
-
+                    var fieldsToUpdateFeatureFile = witBatchRequest.GetFields();
                     var fieldsToUpdateAzure = testCasesToUpdateFromTheAzure.First(item => item.Id == id).Fields;
 
                     if (IsTestCaseFieldsSimilar(fieldsToUpdateFeatureFile, fieldsToUpdateAzure.ToDictionary(k => k.Key, k => k.Value.ToString())))
