@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Azure DevOps: test cases tags update fix.
 - Azure DevOps: description line breaks added.
 
+### Added
+- Azure DevOps: print work item info when Azure DevOps return a non-success status code.
+
 [3.5.0] - 2021-11-19
 ### Added
 - Azure DevOps scenario content: scenario updates.
