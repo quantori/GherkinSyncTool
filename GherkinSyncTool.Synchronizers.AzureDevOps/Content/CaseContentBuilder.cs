@@ -30,6 +30,11 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
         public JsonPatchDocument BuildTestCaseDocument(Scenario scenario, IFeatureFile featureFile, int? id = null)
         {
+            if (string.IsNullOrWhiteSpace(scenario.Name))
+            {
+                throw new ArgumentNullException($"Scenario title is missing, please check the feature file: {featureFile.RelativePath}");
+            }
+            
             var patchDocument = new JsonPatchDocument
             {
                 new()
@@ -259,7 +264,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             var description = new StringBuilder();
             
             //The path will be used for inserting tag id to a feature file
-            description.Append($"<p><div id=\"{HtmlTagIds.FeatureFilePathId}\"><b>Feature file: </b>{featureFile.RelativePath}</div></p>");
+            description.Append($"<p><div id={HtmlTagIds.FeatureFilePathId}><b>Feature file: </b>{featureFile.RelativePath}</div></p>");
             description.Append($"<p><b>{featureFile.Document.Feature.Keyword}:</b> {featureFile.Document.Feature.Name}</p>");
 
             if (!string.IsNullOrWhiteSpace(featureFile.Document.Feature.Description))

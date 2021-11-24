@@ -3,7 +3,7 @@
     public static class HtmlTagIds
     {
         /// <summary>
-        /// Uses for identifying an HTML element which stored feature file path.
+        /// Used for identifying an HTML element that stores feature file path.
         /// </summary>
         public const string FeatureFilePathId = "FeatureFilePath";
     }

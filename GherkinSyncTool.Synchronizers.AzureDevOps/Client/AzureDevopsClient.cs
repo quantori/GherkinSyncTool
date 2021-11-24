@@ -30,28 +30,28 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
 
         public AzureDevopsClient(Context context)
         {
-            Uri uri = new Uri(_azureDevopsSettings.BaseUrl);
-            string personalAccessToken = _azureDevopsSettings.PersonalAccessToken;
+            var uri = new Uri(_azureDevopsSettings.BaseUrl);
+            var personalAccessToken = _azureDevopsSettings.PersonalAccessToken;
             _connection = new VssConnection(uri, new VssBasicCredential(string.Empty, personalAccessToken));
             _context = context;
         }
 
         public WitBatchRequest BuildCreateTestCaseBatchRequest(JsonPatchDocument patchDocument)
         {
-            var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
+            var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
             return workItemTrackingHttpClient.CreateWorkItemBatchRequest(_azureDevopsSettings.Project,
                 WorkItemTypes.TestCase, patchDocument, false, false);
         }
 
         public WitBatchRequest BuildUpdateTestCaseBatchRequest(int id, JsonPatchDocument patchDocument)
         {
-            var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
+            var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
             return workItemTrackingHttpClient.CreateWorkItemBatchRequest(id, patchDocument, false, false);
         }
 
         public IEnumerable<int> GetAllTestCasesIds()
         {
-            var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
+            var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
 
             // wiql - Work Item Query Language
             var wiql = new Wiql
@@ -109,7 +109,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             var workItemsList = new List<WorkItem>();
             try
             {
-                var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
+                var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
                 workItemsList = workItemTrackingHttpClient.GetWorkItemsAsync(_azureDevopsSettings.Project, ids, fields)
                     .Result;
             }
@@ -127,7 +127,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             var result = new List<WorkItem>();
             try
             {
-                var workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
+                var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
                 var workItemBatchResponseList = workItemTrackingHttpClient.ExecuteBatchRequest(request).Result;
 
                 for (var i = 0; i < workItemBatchResponseList.Count; i++)
@@ -162,6 +162,22 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             }
 
             return result;
+        }
+        
+        private WorkItemTrackingHttpClient GetWorkItemTrackingHttpClient()
+        {
+            WorkItemTrackingHttpClient workItemTrackingHttpClient;
+            try
+            {
+                workItemTrackingHttpClient = _connection.GetClient<WorkItemTrackingHttpClient>();
+            }
+            catch (Exception)
+            {
+                Log.Error("Azure DevOps server connection issue, please check configs.");
+                throw;
+            }
+
+            return workItemTrackingHttpClient;
         }
     }
 }
