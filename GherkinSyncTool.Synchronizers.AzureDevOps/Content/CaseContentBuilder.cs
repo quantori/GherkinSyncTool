@@ -257,7 +257,9 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         private string BuildDescription(Scenario scenario, IFeatureFile featureFile)
         {
             var description = new StringBuilder();
-            description.Append($"<p><b>Feature file: </b>{featureFile.RelativePath}</p>");
+            
+            //The path will be used for inserting tag id to a feature file
+            description.Append($"<p><div id=\"{HtmlTagIds.FeatureFilePathId}\"><b>Feature file: </b>{featureFile.RelativePath}</div></p>");
             description.Append($"<p><b>{featureFile.Document.Feature.Keyword}:</b> {featureFile.Document.Feature.Name}</p>");
 
             if (!string.IsNullOrWhiteSpace(featureFile.Document.Feature.Description))
@@ -267,7 +269,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 description.Append($"<p>{featureDescriptionFormatted}</p>");
             }
 
-            description.Append($"<p><b>{scenario.Keyword}:</b> {scenario.Name}");
+            description.Append($"<p><b>{scenario.Keyword}:</b> {scenario.Name}</p>");
 
             if (!string.IsNullOrWhiteSpace(scenario.Description))
             {
