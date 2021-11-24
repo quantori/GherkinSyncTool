@@ -13,7 +13,7 @@ using GherkinSyncTool.Synchronizers.AzureDevOps.Content;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Model;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Utils;
 using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
-using Newtonsoft.Json;
+using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
 using NLog;
 
 namespace GherkinSyncTool.Synchronizers.AzureDevOps
@@ -30,7 +30,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
 
         private readonly Context _context;
 
-        public AzureDevopsSynchronizer(AzureDevopsClient azureDevopsClient, CaseContentBuilder caseContentBuilder, Context context)
+        public AzureDevopsSynchronizer(AzureDevopsClient azureDevopsClient, CaseContentBuilder caseContentBuilder,
+            Context context)
         {
             _azureDevopsClient = azureDevopsClient;
             _caseContentBuilder = caseContentBuilder;
@@ -52,7 +53,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
             {
                 foreach (var scenario in featureFile.Document.Feature.Children.OfType<Scenario>())
                 {
-                    var tagIds = scenario.Tags.Where(tag => tag.Name.Contains(_gherkinSyncToolConfig.TagIdPrefix)).ToList();
+                    var tagIds = scenario.Tags.Where(tag => tag.Name.Contains(_gherkinSyncToolConfig.TagIdPrefix))
+                        .ToList();
 
                     if (tagIds.Count > 1)
                     {
@@ -64,7 +66,17 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                     // Create test case for feature file that first time sync, no tag id present.  
                     if (tagId is null)
                     {
-                        var testCasePatchDocument = _caseContentBuilder.BuildTestCaseDocument(scenario, featureFile, patchDocumentId--);
+                        JsonPatchDocument testCasePatchDocument;
+                        try
+                        {
+                            testCasePatchDocument = _caseContentBuilder.BuildTestCaseDocument(scenario, featureFile, patchDocumentId--);
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Error(e, "Something went wrong with the test case request building.");
+                            _context.IsRunSuccessful = false;
+                            continue;
+                        }
                         var testCaseBatchRequest = _azureDevopsClient.BuildCreateTestCaseBatchRequest(testCasePatchDocument);
                         witBatchRequests.Add(testCaseBatchRequest);
                     }
@@ -75,7 +87,18 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                         var caseId = (int)GherkinHelper.GetTagIdUlong(tagId);
                         if (fullTestCasesIdList.Contains(caseId))
                         {
-                            var testCasePatchDocument = _caseContentBuilder.BuildTestCaseDocument(scenario, featureFile);
+                            JsonPatchDocument testCasePatchDocument;
+                            try
+                            {
+                                testCasePatchDocument = _caseContentBuilder.BuildTestCaseDocument(scenario, featureFile);
+                            }
+                            catch (Exception e)
+                            {
+                                Log.Error(e, "Something went wrong with the test case request building.");
+                                _context.IsRunSuccessful = false;
+                                continue;
+                            }
+
                             var testCaseBatchRequest = _azureDevopsClient.BuildUpdateTestCaseBatchRequest(caseId, testCasePatchDocument);
 
                             testCasesToUpdateFromTheFeatureFiles.Add(caseId, testCaseBatchRequest);
@@ -83,13 +106,26 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                         else
                         {
                             Log.Warn($"Test case with id {caseId} not found. Missing case will be recreated");
-                            var testCasePatchDocument = _caseContentBuilder.BuildTestCaseDocument(scenario, featureFile, patchDocumentId--);
+                            
+                            JsonPatchDocument testCasePatchDocument;
+                            try
+                            {
+                                testCasePatchDocument = _caseContentBuilder.BuildTestCaseDocument(scenario, featureFile, patchDocumentId--);
+                            }
+                            catch (Exception e)
+                            {
+                                Log.Error(e, "Something went wrong with the test case request building.");
+                                _context.IsRunSuccessful = false;
+                                continue;
+                            }
+                            
                             var testCaseBatchRequest = _azureDevopsClient.BuildCreateTestCaseBatchRequest(testCasePatchDocument);
 
                             var tagIdRegexPattern = $@"\s*{GherkinHelper.FormatTagId(caseId.ToString()).Trim()}\s*";
-                            
-                            TextFilesEditMethods.ReplaceTextInTheFileRegex(featureFile.AbsolutePath, tagIdRegexPattern,"");
-                            
+
+                            TextFilesEditMethods.ReplaceTextInTheFileRegex(featureFile.AbsolutePath, tagIdRegexPattern,
+                                "");
+
                             witBatchRequests.Add(testCaseBatchRequest);
                         }
                     }
@@ -153,7 +189,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                     var fieldsToUpdateFeatureFile = witBatchRequest.GetFields();
                     var fieldsToUpdateAzure = testCasesToUpdateFromTheAzure.First(item => item.Id == id).Fields;
 
-                    if (IsTestCaseFieldsSimilar(fieldsToUpdateFeatureFile, fieldsToUpdateAzure.ToDictionary(k => k.Key, k => k.Value.ToString())))
+                    if (IsTestCaseFieldsSimilar(fieldsToUpdateFeatureFile,
+                        fieldsToUpdateAzure.ToDictionary(k => k.Key, k => k.Value.ToString())))
                     {
                         testCasesToUpdateFromTheFeatureFiles.Remove(id);
                         Log.Info($"Up-to-date: [{id}] {fieldsToUpdateFeatureFile[$"{WorkItemFields.Title}"]}");
@@ -188,6 +225,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                         isSimilar = false;
                         break;
                     }
+
                     continue;
                 }
 
