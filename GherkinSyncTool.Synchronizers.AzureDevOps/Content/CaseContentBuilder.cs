@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Serialization;
 using Gherkin.Ast;
 using GherkinSyncTool.Models;
@@ -298,11 +300,19 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 testParameters.Param[index].Name = testParameters.Param[index].Name.Replace(" ", string.Empty);
             }
 
-            var xmlSerializer = new XmlSerializer(typeof(TestParameters));
+            var emptyNamespaces = new XmlSerializerNamespaces(new[] { XmlQualifiedName.Empty });
+            var serializer = new XmlSerializer(typeof(TestParameters));
+            var settings = new XmlWriterSettings
+            {
+                Indent = true,
+                OmitXmlDeclaration = true
+            };
 
-            using TextWriter stringWriter = new StringWriter();
-            xmlSerializer.Serialize(stringWriter, testParameters);
-            return stringWriter.ToString();
+            using var stream = new StringWriter();
+            using var writer = XmlWriter.Create(stream, settings);
+            
+            serializer.Serialize(writer, testParameters, emptyNamespaces);
+            return stream.ToString();
         }
 
         private TestParameters GetTestParameters(IEnumerable<Examples> examples)
@@ -325,8 +335,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             var examplesList = examples.ToList();
             if (!examplesList.Any()) throw new ArgumentNullException(nameof(examples));
 
-            var xmlSerializer = new XmlSerializer(typeof(DataSet));
             var dataSet = new DataSet("NewDataSet");
+            dataSet.Locale = new CultureInfo(string.Empty);
             var dataTable = new System.Data.DataTable("Table1");
 
             var testParameters = GetTestParameters(examplesList);
@@ -354,11 +364,20 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                     dataTable.Rows.Add(dataRow);
                 }
             }
+            
+            var settings = new XmlWriterSettings
+             {
+                 Indent = true,
+                 OmitXmlDeclaration = true,
+                 CheckCharacters = true
+             };
 
-            using TextWriter textWriter = new StringWriter();
-            xmlSerializer.Serialize(textWriter, dataSet);
+            using var stream = new StringWriter();
+            using var writer = XmlWriter.Create(stream, settings);
 
-            return textWriter.ToString();
+            dataSet.WriteXml(writer, XmlWriteMode.WriteSchema);
+            
+            return stream.ToString();
         }
 
         private string ConvertToStringTags(Scenario scenario, IFeatureFile featureFile)
