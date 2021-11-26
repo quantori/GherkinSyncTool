@@ -56,8 +56,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             // wiql - Work Item Query Language
             var wiql = new Wiql
             {
-                Query =
-                    $@"Select [{WorkItemFields.Id}] From WorkItems Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'"
+                Query = $@"Select [{WorkItemFields.Id}] From WorkItems Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'"
             };
 
             var workItemIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
