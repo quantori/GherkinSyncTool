@@ -370,7 +370,6 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                  Indent = true,
                  OmitXmlDeclaration = true,
                  CheckCharacters = true
-                 
              };
 
             using var stream = new StringWriter();
