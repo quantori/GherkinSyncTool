@@ -13,6 +13,7 @@ using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Models.Utils;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Model;
+using GherkinSyncTool.Synchronizers.AzureDevOps.Utils;
 using Microsoft.TeamFoundation.TestManagement.WebApi;
 using Microsoft.VisualStudio.Services.WebApi.Patch;
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
@@ -34,9 +35,10 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         {
             if (string.IsNullOrWhiteSpace(scenario.Name))
             {
-                throw new ArgumentNullException($"Scenario title is missing, please check the feature file: {featureFile.RelativePath}");
+                throw new ArgumentNullException(
+                    $"Scenario title is missing, please check the feature file: {featureFile.RelativePath}");
             }
-            
+
             var patchDocument = new JsonPatchDocument
             {
                 new()
@@ -111,7 +113,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             patchDocument.AddRange(patchDocumentParameters);
         }
 
-        private void AddTestTagsToJsonDocument(JsonPatchDocument patchDocument, Scenario scenario, IFeatureFile featureFile)
+        private void AddTestTagsToJsonDocument(JsonPatchDocument patchDocument, Scenario scenario,
+            IFeatureFile featureFile)
         {
             var tags = ConvertToStringTags(scenario, featureFile);
 
@@ -126,7 +129,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             }
         }
 
-        private void AddTestStepsToJsonDocument(JsonPatchDocument jsonPatchDocument, Scenario scenario, IFeatureFile featureFile)
+        private void AddTestStepsToJsonDocument(JsonPatchDocument jsonPatchDocument, Scenario scenario,
+            IFeatureFile featureFile)
         {
             var steps = GetStepsFromFeatureFile(scenario, featureFile);
             var testBase = _testBaseHelper.Create();
@@ -153,7 +157,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
                 for (var index = 0; index < backgroundSteps.Count; index++)
                 {
-                    backgroundSteps[index] = $"<span style=\"color:RoyalBlue\">Background:</span> {backgroundSteps[index]}";
+                    backgroundSteps[index] =
+                        $"<span style=\"color:RoyalBlue\">Background:</span> {backgroundSteps[index]}";
                 }
 
                 return backgroundSteps.Concat(scenarioSteps).ToList();
@@ -198,7 +203,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return $"<p>{multilineArgumentFormatted}</p>";
         }
 
-        private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters, bool addSpaceBeforeIfParameterGoesFirst = false)
+        private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters,
+            bool addSpaceBeforeIfParameterGoesFirst = false)
         {
             if (testParameters is null) return stringWithParameters;
 
@@ -215,12 +221,13 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 //In case line stringWithParameters contains only a single parameter.
                 if (theNextCharacterAfterParameter < stringWithParameters.Length)
                 {
-                    if (!Regex.IsMatch(stringWithParameters[theNextCharacterAfterParameter].ToString(), @"\W+|\s") || stringWithParameters[theNextCharacterAfterParameter].Equals('<'))
+                    if (!Regex.IsMatch(stringWithParameters[theNextCharacterAfterParameter].ToString(), @"\W+|\s") ||
+                        stringWithParameters[theNextCharacterAfterParameter].Equals('<'))
                     {
                         stringWithParameters = stringWithParameters.Insert(theNextCharacterAfterParameter, " ");
                     }
                 }
-                
+
                 var beforeParameter = string.Empty;
                 if (addSpaceBeforeIfParameterGoesFirst)
                 {
@@ -233,7 +240,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 //Azure DevOps test parameters don't allow white spaces in a middle of a parameter.
                 var paramWithNoSpaces = param.Name.Replace(" ", string.Empty);
 
-                stringWithParameters = stringWithParameters.Replace($"<{param.Name}>", $"<span style=\"color:LightSeaGreen\">{beforeParameter}@{paramWithNoSpaces}</span>");
+                stringWithParameters = stringWithParameters.Replace($"<{param.Name}>",
+                    $"<span style=\"color:LightSeaGreen\">{beforeParameter}@{paramWithNoSpaces}</span>");
             }
 
             return stringWithParameters;
@@ -278,23 +286,24 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         private string BuildDescription(Scenario scenario, IFeatureFile featureFile)
         {
             var description = new StringBuilder();
-            
+
             //The path will be used for inserting tag id to a feature file
             description.Append($"<p><div id={HtmlTagIds.FeatureFilePathId}><b>Feature file: </b>{featureFile.RelativePath}</div></p>");
-            description.Append($"<p><b>{featureFile.Document.Feature.Keyword}:</b> {featureFile.Document.Feature.Name}</p>");
+            description.Append($"<p><b>{featureFile.Document.Feature.Keyword}:</b> {featureFile.Document.Feature.Name.EncodeHtml()}</p>");
 
             if (!string.IsNullOrWhiteSpace(featureFile.Document.Feature.Description))
             {
-                var featureDescriptionFormatted =
-                    Regex.Replace(featureFile.Document.Feature.Description, @"\n|\r\n", "<br>");
+                var featureDescriptionFormatted = featureFile.Document.Feature.Description.EncodeHtml();
+                featureDescriptionFormatted = Regex.Replace(featureDescriptionFormatted, @"\n|\r\n", "<br>");
                 description.Append($"<p>{featureDescriptionFormatted}</p>");
             }
 
-            description.Append($"<p><b>{scenario.Keyword}:</b> {scenario.Name}</p>");
+            description.Append($"<p><b>{scenario.Keyword}:</b> {scenario.Name.EncodeHtml()}</p>");
 
             if (!string.IsNullOrWhiteSpace(scenario.Description))
             {
-                var scenarioDescriptionFormatted = Regex.Replace(scenario.Description, @"\n|\r\n", "<br>");
+                var scenarioDescriptionFormatted = scenario.Description.EncodeHtml();
+                scenarioDescriptionFormatted = Regex.Replace(scenarioDescriptionFormatted, @"\n|\r\n", "<br>");
                 description.Append($@"<p>{scenarioDescriptionFormatted}</p>");
             }
 
@@ -324,7 +333,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
             using var stream = new StringWriter();
             using var writer = XmlWriter.Create(stream, settings);
-            
+
             serializer.Serialize(writer, testParameters, emptyNamespaces);
             return stream.ToString();
         }
@@ -378,7 +387,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                     dataTable.Rows.Add(dataRow);
                 }
             }
-            
+
             var settings = new XmlWriterSettings
             {
                 Indent = true,
@@ -390,7 +399,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             using var writer = XmlWriter.Create(stream, settings);
 
             dataSet.WriteXml(writer, XmlWriteMode.WriteSchema);
-            
+
             return stream.ToString();
         }
 

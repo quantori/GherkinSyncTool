@@ -210,8 +210,10 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
             var isSimilar = true;
             foreach (var (fieldKey, fieldValue) in dictionaryA)
             {
-                var fieldANormalized = Regex.Replace(fieldValue, @"\s", "");
-                var fieldBNormalized = Regex.Replace(dictionaryB[fieldKey], @"\s", "");
+                var fieldANormalized = Regex.Replace(fieldValue, @"\s", "").ToLowerInvariant();
+                var fieldBNormalized = Regex.Replace(dictionaryB[fieldKey], @"\s", "").ToLowerInvariant();
+                
+                //Compare Tags
                 if (string.Equals(fieldKey, WorkItemFields.Tags))
                 {
                     var separator = ";";
