@@ -198,7 +198,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return $"<p>{multilineArgumentFormatted}</p>";
         }
 
-        private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters)
+        private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters, bool addSpaceBeforeIfParameterGoesFirst = false)
         {
             if (testParameters is null) return stringWithParameters;
 
@@ -212,7 +212,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
                 var theNextCharacterAfterParameter = indexOfParameter + parameter.Length;
 
-                //In case line stringWithParameters contains only a single parameter
+                //In case line stringWithParameters contains only a single parameter.
                 if (theNextCharacterAfterParameter < stringWithParameters.Length)
                 {
                     if (!Regex.IsMatch(stringWithParameters[theNextCharacterAfterParameter].ToString(), @"\W+|\s") || stringWithParameters[theNextCharacterAfterParameter].Equals('<'))
@@ -220,9 +220,20 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                         stringWithParameters = stringWithParameters.Insert(theNextCharacterAfterParameter, " ");
                     }
                 }
+                
+                var beforeParameter = string.Empty;
+                if (addSpaceBeforeIfParameterGoesFirst)
+                {
+                    if (indexOfParameter == 0)
+                    {
+                        beforeParameter = " ";
+                    }
+                }
 
-                //Azure DevOps test parameters don't allow white spaces.
-                stringWithParameters = stringWithParameters.Replace($"<{param.Name}>", $"<span style=\"color:LightSeaGreen\">@{param.Name.Replace(" ", string.Empty)}</span>");
+                //Azure DevOps test parameters don't allow white spaces in a middle of a parameter.
+                var paramWithNoSpaces = param.Name.Replace(" ", string.Empty);
+
+                stringWithParameters = stringWithParameters.Replace($"<{param.Name}>", $"<span style=\"color:LightSeaGreen\">{beforeParameter}@{paramWithNoSpaces}</span>");
             }
 
             return stringWithParameters;
@@ -231,13 +242,15 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         private string BuildTable(List<TableRow> tableRows, TestParameters testParameters)
         {
             var table = new StringBuilder();
-            table.Append("<br><table style=\"width: 100%;\">");
+            table.Append("<br><table style=\"width: 100%; table-layout: fixed; \">");
 
             //Header
             table.Append("<tr>");
             foreach (var cell in tableRows.First().Cells)
             {
-                table.Append($"<th style=\"border: 1px solid RoyalBlue; font-weight: bold;\">{FormatTestParameters(testParameters, cell.Value)}</th>");
+                //Azure DevOps work properly with parameters in the tables in case a parameter begins from a space.
+                var header = FormatTestParameters(testParameters, cell.Value, true);
+                table.Append($"<th style=\"border: 1px solid RoyalBlue; font-weight: bold; padding: 3px;\">{header}</th>");
             }
 
             table.Append("</tr>");
@@ -250,7 +263,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 var row = tableRows[i];
                 foreach (var cell in row.Cells)
                 {
-                    table.Append($"<td style=\"border: 1px solid RoyalBlue; \">{FormatTestParameters(testParameters, cell.Value)}</td>");
+                    var data = FormatTestParameters(testParameters, cell.Value, true);
+                    table.Append($"<td style=\"border: 1px solid RoyalBlue; padding: 3px; \">{data}</td>");
                 }
 
                 table.Append("</tr>");
@@ -366,11 +380,11 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             }
             
             var settings = new XmlWriterSettings
-             {
-                 Indent = true,
-                 OmitXmlDeclaration = true,
-                 CheckCharacters = true
-             };
+            {
+                Indent = true,
+                OmitXmlDeclaration = true,
+                CheckCharacters = true
+            };
 
             using var stream = new StringWriter();
             using var writer = XmlWriter.Create(stream, settings);
