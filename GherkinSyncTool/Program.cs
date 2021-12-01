@@ -37,7 +37,7 @@ namespace GherkinSyncTool
                 
                 var stopwatch = Stopwatch.StartNew();
                 //Parse files
-                List<IFeatureFile> featureFiles = ParseFeatureFiles(container);
+                var featureFiles = ParseFeatureFiles(container);
                 if (featureFiles.Count == 0)
                 {
                     Log.Info("No files were found for synchronization");

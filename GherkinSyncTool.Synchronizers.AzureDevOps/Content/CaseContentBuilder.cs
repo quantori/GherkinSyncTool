@@ -12,9 +12,11 @@ using Gherkin.Ast;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Models.Utils;
+using GherkinSyncTool.Synchronizers.AzureDevOps.Client;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Model;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Utils;
 using Microsoft.TeamFoundation.TestManagement.WebApi;
+using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
 using Microsoft.VisualStudio.Services.WebApi.Patch;
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
 using DataTable = Gherkin.Ast.DataTable;
@@ -24,19 +26,22 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
     public class CaseContentBuilder
     {
         private readonly ITestBaseHelper _testBaseHelper;
+
         private readonly AzureDevopsSettings _azureDevopsSettings = ConfigurationManager.GetConfiguration<AzureDevopsConfigs>().AzureDevopsSettings;
 
-        public CaseContentBuilder(ITestBaseHelper testBaseHelper)
+        private readonly AzureDevopsClient _devopsClient;
+
+        public CaseContentBuilder(ITestBaseHelper testBaseHelper, AzureDevopsClient devopsClient)
         {
             _testBaseHelper = testBaseHelper;
+            _devopsClient = devopsClient;
         }
 
-        public JsonPatchDocument BuildTestCaseDocument(Scenario scenario, IFeatureFile featureFile, int? id = null)
+        private JsonPatchDocument BuildTestCaseDocument(Scenario scenario, IFeatureFile featureFile, int? id = null)
         {
             if (string.IsNullOrWhiteSpace(scenario.Name))
             {
-                throw new ArgumentNullException(
-                    $"Scenario title is missing, please check the feature file: {featureFile.RelativePath}");
+                throw new ArgumentNullException($"Scenario title is missing, please check the feature file: {featureFile.RelativePath}");
             }
 
             var patchDocument = new JsonPatchDocument
@@ -60,8 +65,45 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             AddTestStepsToJsonDocument(patchDocument, scenario, featureFile);
             AddTestTagsToJsonDocument(patchDocument, scenario, featureFile);
             AddParametersToJsonDocument(patchDocument, scenario);
+            AddStateToJsonDocument(patchDocument, TestCaseState.Ready);
 
             return patchDocument;
+        }
+
+        public WitBatchRequest BuildTestCaseBatchRequest(Scenario scenario, IFeatureFile featureFile, int? id = null)
+        {
+            var patchDocument = BuildTestCaseDocument(scenario, featureFile, id);
+
+            return _devopsClient.BuildCreateTestCaseBatchRequest(patchDocument);
+        }
+
+        public WitBatchRequest BuildUpdateTestCaseBatchRequest(Scenario scenario, IFeatureFile featureFile, int id)
+        {
+            var patchDocument = BuildTestCaseDocument(scenario, featureFile);
+
+            return _devopsClient.BuildUpdateTestCaseBatchRequest(id, patchDocument);
+        }
+
+        public WitBatchRequest BuildUpdateStateBatchRequest(int id, string state)
+        {
+            if (string.IsNullOrWhiteSpace(state)) throw new ArgumentNullException(nameof(state));
+
+            var patchDocument = new JsonPatchDocument();
+            AddStateToJsonDocument(patchDocument, state);
+
+            return _devopsClient.BuildUpdateTestCaseBatchRequest(id, patchDocument);
+        }
+
+        private void AddStateToJsonDocument(JsonPatchDocument patchDocument, string state)
+        {
+            if (string.IsNullOrWhiteSpace(state)) throw new ArgumentNullException(nameof(state));
+
+            patchDocument.Add(new JsonPatchOperation
+            {
+                Operation = Operation.Add,
+                Path = $"/{WorkItemFields.State}",
+                Value = state
+            });
         }
 
         private void AddIdToJsonDocument(JsonPatchDocument patchDocument, int? id)
@@ -118,15 +160,16 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         {
             var tags = ConvertToStringTags(scenario, featureFile);
 
-            if (!string.IsNullOrWhiteSpace(tags))
+            var gherkinSyncToolIdTag = Tags.GherkinSyncToolIdTagPrefix + _azureDevopsSettings.GherkinSyncToolId;
+
+            tags = string.IsNullOrWhiteSpace(tags) ? gherkinSyncToolIdTag : $"{tags}; {gherkinSyncToolIdTag}";
+
+            patchDocument.Add(new JsonPatchOperation
             {
-                patchDocument.Add(new JsonPatchOperation
-                {
-                    Operation = Operation.Replace,
-                    Path = $"/fields/{WorkItemFields.Tags}",
-                    Value = tags
-                });
-            }
+                Operation = Operation.Replace,
+                Path = $"/fields/{WorkItemFields.Tags}",
+                Value = tags
+            });
         }
 
         private void AddTestStepsToJsonDocument(JsonPatchDocument jsonPatchDocument, Scenario scenario,

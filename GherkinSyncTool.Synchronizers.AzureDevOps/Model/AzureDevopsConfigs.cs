@@ -22,6 +22,11 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Model
             {
                 throw new ArgumentException("Azure DevOps PersonalAccessToken parameter is empty. Please, check configuration.");
             }
+            
+            if (string.IsNullOrWhiteSpace(AzureDevopsSettings.GherkinSyncToolId))
+            {
+                throw new ArgumentException("Azure DevOps GherkinSyncToolId parameter is empty. Please, check configuration.");
+            }
         }
 
     }
@@ -32,5 +37,6 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Model
         public string PersonalAccessToken { get; set; }
         public string Project { get; set; }
         public string Area { get; set; }
+        public string GherkinSyncToolId { get; set; }
     }
 }

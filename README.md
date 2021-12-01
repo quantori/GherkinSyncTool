@@ -87,15 +87,17 @@ GherkinSyncTool can be configured in three ways. The priority corresponds to the
 | UserName                   | TestRail user name                                                                               | Yes      |
 | Password                   | TestRail password                                                                                | Yes      |
 | ArchiveSection             | Deleted folders will be moved to this section                                                    | No       |
+| GherkinSyncToolId          | ID for isolating usage of multiple GherkinSyncTools in one test management system                | Yes      |
 
 ### Azure DevOps settings
 
-| Parameter           | Description                 | Required |
-| ------------------- | --------------------------- | :------: |
-| BaseUrl             | Azure DevOps URL address    | Yes      |
-| PersonalAccessToken | Personal access token (PAT) | Yes      |
-| Project             | Name of a project           | Yes      |
-| Area                | Work item area path         | No       |
+| Parameter           | Description                                                                       | Required |
+| ------------------- | --------------------------------------------------------------------------------- | :------: |
+| BaseUrl             | Azure DevOps URL address                                                          | Yes      |
+| PersonalAccessToken | Personal access token (PAT)                                                       | Yes      |
+| Project             | Name of a project                                                                 | Yes      |
+| Area                | Work item area path                                                               | No       |
+| GherkinSyncToolId   | ID for isolating usage of multiple GherkinSyncTools in one test management system | Yes      |
 
 ## Usage
 
