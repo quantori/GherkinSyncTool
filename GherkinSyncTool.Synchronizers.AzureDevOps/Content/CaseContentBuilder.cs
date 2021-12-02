@@ -101,7 +101,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             patchDocument.Add(new JsonPatchOperation
             {
                 Operation = Operation.Add,
-                Path = $"/{WorkItemFields.State}",
+                Path = $"/fields/{WorkItemFields.State}",
                 Value = state
             });
         }
