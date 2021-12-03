@@ -231,9 +231,12 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
         private static bool IsTestCaseFieldsSimilar(Dictionary<string, string> dictionaryA,
             IDictionary<string, string> dictionaryB)
         {
-            var isSimilar = true;
             foreach (var (fieldKey, fieldValue) in dictionaryA)
             {
+                if (!dictionaryB.ContainsKey(fieldKey))
+                {
+                    return false;
+                }
                 var fieldANormalized = Regex.Replace(fieldValue, @"\s", "").ToLowerInvariant();
                 var fieldBNormalized = Regex.Replace(dictionaryB[fieldKey], @"\s", "").ToLowerInvariant();
 
@@ -248,8 +251,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
 
                     if (!tagsA.SequenceEqual(tagsB))
                     {
-                        isSimilar = false;
-                        break;
+                        return false;
                     }
 
                     continue;
@@ -257,12 +259,11 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
 
                 if (!string.Equals(fieldANormalized, fieldBNormalized, StringComparison.OrdinalIgnoreCase))
                 {
-                    isSimilar = false;
-                    break;
+                    return false;
                 }
             }
 
-            return isSimilar;
+            return true;
         }
     }
 }
