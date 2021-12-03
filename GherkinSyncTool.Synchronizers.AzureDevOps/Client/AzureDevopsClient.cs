@@ -56,7 +56,28 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             // wiql - Work Item Query Language
             var wiql = new Wiql
             {
-                Query = $@"Select [{WorkItemFields.Id}] From WorkItems Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'"
+                Query = $@"Select [{WorkItemFields.Id}] 
+                           From WorkItems 
+                           Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'"
+            };
+
+            var workItemIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
+
+            return workItemIds.WorkItems.Select(reference => reference.Id);
+        }
+        
+        public IEnumerable<int> GetSyncedTestCasesIds()
+        {
+            var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
+
+            // wiql - Work Item Query Language
+            var wiql = new Wiql
+            {
+                Query = $@"Select [{WorkItemFields.Id}] 
+                           From WorkItems 
+                           Where [System.WorkItemType] = '{WorkItemTypes.TestCase}' 
+                           AND [{WorkItemFields.State}] <> '{TestCaseState.Closed}'
+                           AND [{WorkItemFields.Tags}] Contains '{Tags.GherkinSyncToolIdTagPrefix + _azureDevopsSettings.GherkinSyncToolId}'"
             };
 
             var workItemIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
@@ -132,7 +153,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
                 for (var i = 0; i < workItemBatchResponseList.Count; i++)
                 {
                     var witBatchResponse = workItemBatchResponseList[i];
-                    
+
                     if (witBatchResponse.Code != 200)
                     {
                         Log.Error($"Something went wrong with the test case synchronization. Title: {request[i].GetFields()[WorkItemFields.Title]}");
@@ -147,10 +168,16 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
 
                     if (workItem.Rev != 1)
                     {
+                        if (workItem.Fields[WorkItemFields.State].Equals(TestCaseState.Closed))
+                        {
+                            Log.Info($"Closed: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");
+                            continue;
+                        }
+
                         Log.Info($"Updated: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");
                         continue;
                     }
-                    
+
                     Log.Info($"Created: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");
                 }
             }
@@ -162,7 +189,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
 
             return result;
         }
-        
+
         private WorkItemTrackingHttpClient GetWorkItemTrackingHttpClient()
         {
             WorkItemTrackingHttpClient workItemTrackingHttpClient;

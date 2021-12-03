@@ -10,5 +10,6 @@
         public const string LocalDataSource = "Microsoft.VSTS.TCM.LocalDataSource";
         public const string Tags = "System.Tags";
         public const string AreaPath = "System.AreaPath";
+        public const string State = "System.State";
     }
 }
