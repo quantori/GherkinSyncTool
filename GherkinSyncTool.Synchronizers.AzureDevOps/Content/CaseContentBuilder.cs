@@ -65,7 +65,6 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             AddTestStepsToJsonDocument(patchDocument, scenario, featureFile);
             AddTestTagsToJsonDocument(patchDocument, scenario, featureFile);
             AddParametersToJsonDocument(patchDocument, scenario);
-            AddStateToJsonDocument(patchDocument, TestCaseState.Ready);
 
             return patchDocument;
         }
@@ -80,6 +79,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         public WitBatchRequest BuildUpdateTestCaseBatchRequest(Scenario scenario, IFeatureFile featureFile, int id)
         {
             var patchDocument = BuildTestCaseDocument(scenario, featureFile);
+            AddStateToJsonDocument(patchDocument, TestCaseState.Design);
 
             return _devopsClient.BuildUpdateTestCaseBatchRequest(id, patchDocument);
         }

@@ -77,7 +77,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
                            From WorkItems 
                            Where [System.WorkItemType] = '{WorkItemTypes.TestCase}' 
                            AND [{WorkItemFields.State}] <> '{TestCaseState.Closed}'
-                           AND [{WorkItemFields.Tags}] Contains '{Tags.GherkinSyncToolIdTagPrefix}'"
+                           AND [{WorkItemFields.Tags}] Contains '{Tags.GherkinSyncToolIdTagPrefix + _azureDevopsSettings.GherkinSyncToolId}'"
             };
 
             var workItemIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
@@ -171,9 +171,9 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
                         if (workItem.Fields[WorkItemFields.State].Equals(TestCaseState.Closed))
                         {
                             Log.Info($"Closed: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");
-                            continue;    
+                            continue;
                         }
-                        
+
                         Log.Info($"Updated: [{workItem.Id}] {workItem.Fields[WorkItemFields.Title]}");
                         continue;
                     }

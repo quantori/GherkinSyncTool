@@ -134,6 +134,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                 witBatchRequests.AddRange(testCasesToUpdate);
             }
             
+            //Close deleted scenarios
             var testCasesToClose = GetTestCasesToClose(testCasesFromTheFeatureFiles.Keys.ToList());
             witBatchRequests.AddRange(testCasesToClose);
 
