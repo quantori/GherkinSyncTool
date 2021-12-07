@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <AssemblyVersion>3.6.1</AssemblyVersion>
+        <AssemblyVersion>3.6.2</AssemblyVersion>
         <OutputType>Exe</OutputType>
         <TargetFramework>net5.0</TargetFramework>
         <PackAsTool>true</PackAsTool>
         <Company>Quantori</Company>
         <RepositoryUrl>https://github.com/quantori/GherkinSyncTool</RepositoryUrl>
-        <Description>GherkinSyncTool is an open-source console application that synchronizes tests scenarios in Gherkin syntax with a test management system.</Description>
+        <Description>GherkinSyncTool is an open-source console application that synchronizes tests scenarios in Gherkin syntax with a test management system like TestRail or Azure DevOps.</Description>
     </PropertyGroup>
 
     <ItemGroup>
