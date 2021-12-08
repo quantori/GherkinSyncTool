@@ -246,8 +246,14 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return $"<p>{multilineArgumentFormatted}</p>";
         }
 
-        private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters,
-            bool addSpaceBeforeIfParameterGoesFirst = false)
+        /// <summary>
+        /// Format test parameters with Azure Devops API requirements.
+        /// </summary>
+        /// <param name="testParameters"></param>
+        /// <param name="stringWithParameters"></param>
+        /// <param name="addSpaces">Add space before and after parameter</param>
+        /// <returns></returns>
+        private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters, bool addSpaces = false)
         {
             if (testParameters is null) return stringWithParameters;
 
@@ -257,6 +263,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
                 //Azure DevOps test parameters required a whitespace or non-word character at the end. Parameters that go one by one without space are not permissible.
                 var indexOfParameter = stringWithParameters.IndexOf(parameter, StringComparison.InvariantCulture);
+                //Continue if the parameter is not in the string.
                 if (indexOfParameter == -1) continue;
 
                 var theNextCharacterAfterParameter = indexOfParameter + parameter.Length;
@@ -271,20 +278,12 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                     }
                 }
 
-                var beforeParameter = string.Empty;
-                if (addSpaceBeforeIfParameterGoesFirst)
-                {
-                    if (indexOfParameter == 0)
-                    {
-                        beforeParameter = " ";
-                    }
-                }
+                var spaceBefore = addSpaces && indexOfParameter == 0 ? " " : string.Empty;
+                var spaceAfter = addSpaces && theNextCharacterAfterParameter == stringWithParameters.Length ? " " : string.Empty;
 
                 //Azure DevOps test parameters don't allow white spaces in a middle of a parameter.
-                var paramWithNoSpaces = param.Name.Replace(" ", string.Empty);
-
                 stringWithParameters = stringWithParameters.Replace($"<{param.Name}>",
-                    $"<span style=\"color:LightSeaGreen\">{beforeParameter}@{paramWithNoSpaces}</span>");
+                    $"<span style=\"color:LightSeaGreen\">{spaceBefore}@{param.Name.FormatStringToCamelCase()}{spaceAfter}</span>");
             }
 
             return stringWithParameters;
@@ -363,7 +362,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             //Azure DevOps test parameters don't allow white spaces.
             for (var index = 0; index < testParameters.Param.Count; index++)
             {
-                testParameters.Param[index].Name = testParameters.Param[index].Name.Replace(" ", string.Empty);
+                testParameters.Param[index].Name = testParameters.Param[index].Name.FormatStringToCamelCase();
             }
 
             var emptyNamespaces = new XmlSerializerNamespaces(new[] { XmlQualifiedName.Empty });
@@ -410,7 +409,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             foreach (var param in testParameters.Param)
             {
                 //Azure DevOps test parameters don't allow white spaces.
-                var dataColumn = new DataColumn(param.Name.Replace(" ", string.Empty));
+                var dataColumn = new DataColumn(param.Name.FormatStringToCamelCase());
                 dataTable.Columns.Add(dataColumn);
             }
 
