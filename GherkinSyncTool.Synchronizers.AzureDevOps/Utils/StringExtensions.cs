@@ -25,5 +25,11 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Utils
             
             return input;
         }
+        
+        public static string RemoveWhitespaceCharacters(this string input)
+        {
+            input = Regex.Replace(input ?? string.Empty, @"\s", "");
+            return input;
+        }
     }
 }
