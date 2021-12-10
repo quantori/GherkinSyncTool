@@ -237,13 +237,14 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                 {
                     return false;
                 }
-                var fieldANormalized = Regex.Replace(fieldValue, @"\s", "").ToLowerInvariant();
-                var fieldBNormalized = Regex.Replace(dictionaryB[fieldKey], @"\s", "").ToLowerInvariant();
+
+                var fieldANormalized = Regex.Replace(fieldValue ?? string.Empty, @"\s", "").ToLowerInvariant();
+                var fieldBNormalized = Regex.Replace(dictionaryB[fieldKey] ?? string.Empty, @"\s", "").ToLowerInvariant();
 
                 //Compare Tags
                 if (string.Equals(fieldKey, WorkItemFields.Tags))
                 {
-                    var separator = ";";
+                    const string separator = ";";
                     var tagsA = fieldANormalized.Split(separator).ToList();
                     tagsA.Sort();
                     var tagsB = fieldBNormalized.Split(separator).ToList();

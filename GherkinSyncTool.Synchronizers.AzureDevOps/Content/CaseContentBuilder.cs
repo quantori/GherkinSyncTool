@@ -80,6 +80,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         {
             var patchDocument = BuildTestCaseDocument(scenario, featureFile);
             AddStateToJsonDocument(patchDocument, TestCaseState.Design);
+            
+            if (!scenario.Examples.Any()) RemoveParametersFromJsonDocument(patchDocument);
 
             return _devopsClient.BuildUpdateTestCaseBatchRequest(id, patchDocument);
         }
@@ -149,6 +151,25 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                     Operation = Operation.Add,
                     Path = $"/fields/{WorkItemFields.LocalDataSource}",
                     Value = GetXmlTestParametersValues(scenario.Examples)
+                }
+            };
+
+            patchDocument.AddRange(patchDocumentParameters);
+        }
+        
+        private void RemoveParametersFromJsonDocument(JsonPatchDocument patchDocument)
+        {
+            var patchDocumentParameters = new JsonPatchDocument
+            {
+                new()
+                {
+                    Operation = Operation.Remove,
+                    Path = $"/fields/{WorkItemFields.Parameters}"
+                },
+                new()
+                {
+                    Operation = Operation.Remove,
+                    Path = $"/fields/{WorkItemFields.LocalDataSource}"
                 }
             };
 
