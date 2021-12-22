@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using Gherkin.Ast;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
@@ -86,7 +85,17 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                         var caseId = (int)GherkinHelper.GetTagIdUlong(tagId);
                         if (testCasesIdFromAzureDevops.Contains(caseId))
                         {
-                            testCasesFromTheFeatureFiles.Add(caseId, null);
+                            try
+                            {
+                                testCasesFromTheFeatureFiles.Add(caseId, null);
+                            }
+                            catch (ArgumentException)
+                            {
+                                Log.Error( $"A scenario with the same ID already exists. ID: {caseId}");
+                                _context.IsRunSuccessful = false;
+                                continue;
+                            }
+                            
                             WitBatchRequest testCaseBatchRequest;
                             try
                             {
@@ -235,6 +244,12 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
             {
                 if (!dictionaryB.ContainsKey(fieldKey))
                 {
+                    //Continue if no parameters field exists and the value is null.
+                    if ((fieldKey.Equals(WorkItemFields.Parameters) || fieldKey.Equals(WorkItemFields.LocalDataSource)) && fieldValue is null)
+                    {
+                        continue;
+                    }
+
                     return false;
                 }
 

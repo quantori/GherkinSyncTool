@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <AssemblyVersion>3.6.3</AssemblyVersion>
+        <AssemblyVersion>3.6.4</AssemblyVersion>
         <OutputType>Exe</OutputType>
         <TargetFramework>net5.0</TargetFramework>
         <PackAsTool>true</PackAsTool>
