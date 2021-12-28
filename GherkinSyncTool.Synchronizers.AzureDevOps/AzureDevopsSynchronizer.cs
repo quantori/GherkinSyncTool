@@ -49,6 +49,12 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
 
             foreach (var featureFile in featureFiles)
             {
+                if (featureFile.Document.Feature is null)
+                {
+                    Log.Warn($"Feature file is empty: {featureFile.RelativePath}");
+                    continue;
+                }
+                
                 foreach (var scenario in featureFile.Document.Feature.Children.OfType<Scenario>())
                 {
                     var tagIds = scenario.Tags.Where(tag => tag.Name.Contains(_gherkinSyncToolConfig.TagIdPrefix))
