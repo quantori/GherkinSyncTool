@@ -80,7 +80,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         {
             var patchDocument = BuildTestCaseDocument(scenario, featureFile);
             AddStateToJsonDocument(patchDocument, TestCaseState.Design);
-            
+
             if (!scenario.Examples.Any()) RemoveParametersFromJsonDocument(patchDocument);
 
             return _devopsClient.BuildUpdateTestCaseBatchRequest(id, patchDocument);
@@ -156,7 +156,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
             patchDocument.AddRange(patchDocumentParameters);
         }
-        
+
         private void RemoveParametersFromJsonDocument(JsonPatchDocument patchDocument)
         {
             var patchDocumentParameters = new JsonPatchDocument
@@ -276,11 +276,16 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         /// <returns></returns>
         private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters, bool addSpaces = false)
         {
-            if (testParameters is null) return stringWithParameters;
+            stringWithParameters = stringWithParameters.EncodeHtml();
+            
+            if (testParameters is null)
+            {
+                return stringWithParameters;
+            }
 
             foreach (var param in testParameters.Param)
             {
-                var parameter = $"<{param.Name}>";
+                var parameter = $"&lt;{param.Name}&gt;";
 
                 //Azure DevOps test parameters required a whitespace or non-word character at the end. Parameters that go one by one without space are not permissible.
                 var indexOfParameter = stringWithParameters.IndexOf(parameter, StringComparison.InvariantCulture);
@@ -303,8 +308,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 var spaceAfter = addSpaces && theNextCharacterAfterParameter == stringWithParameters.Length ? " " : string.Empty;
 
                 //Azure DevOps test parameters don't allow white spaces in a middle of a parameter.
-                stringWithParameters = stringWithParameters.Replace($"<{param.Name}>",
-                    $"<span style=\"color:LightSeaGreen\">{spaceBefore}@{param.Name.FormatStringToCamelCase()}{spaceAfter}</span>");
+                stringWithParameters = stringWithParameters.Replace(parameter, $"<span style=\"color:LightSeaGreen\">{spaceBefore}@{param.Name.FormatStringToCamelCase()}{spaceAfter}</span>");
             }
 
             return stringWithParameters;
