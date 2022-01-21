@@ -61,15 +61,8 @@ namespace GherkinSyncTool.Models.Utils
                 var featureFileLines = File.ReadAllLines(path).ToList();
                 var lineNumber = featureFileLines.FindIndex(lineRegex.IsMatch);
                 featureFileLines.Insert(lineNumber, text);
-
-                using var stream = File.OpenWrite(path);
-                using var writer = new StreamWriter(stream);
-               
-                for (var i = 0; i < featureFileLines.Count - 1; i++)
-                {
-                    writer.WriteLine(featureFileLines[i]);
-                }
-                writer.Write(featureFileLines[^1]);
+                var fullText = string.Join(Environment.NewLine, featureFileLines);
+                File.WriteAllText(path, fullText);
             }
             catch (Exception e)
             {
