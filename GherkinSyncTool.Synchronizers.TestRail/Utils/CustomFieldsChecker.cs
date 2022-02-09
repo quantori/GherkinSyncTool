@@ -23,15 +23,14 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
         public void CheckCustomFields()
         {
             var caseFields = _testRailClientWrapper.GetCaseFields().ToList();
-            var actualCustomFieldNames = caseFields.Select(f => f.SystemName);
+            var actualCustomFieldNames = caseFields.Select(f => f.SystemName).ToList();
             var expectedCustomFields = GetExpectedCustomFields().ToList();
-            foreach (var customField in actualCustomFieldNames)
+            foreach (var expectedCustomField in expectedCustomFields)
             {
-                if (!expectedCustomFields.Contains(customField))
+                if (!actualCustomFieldNames.Contains(expectedCustomField))
                 {
-                    throw new ArgumentException(
-                        $"\r\nOne of the required custom fields is missing: \"{customField}\". Please check your TestRail case fields in customization menu\r\n");
-                }
+                    throw new ArgumentException($"\r\nOne of the required custom fields is missing: \"{expectedCustomField}\". Please check your TestRail case fields in customization menu\r\n");
+                } 
             }
 
             foreach (var field in caseFields.Where(f => expectedCustomFields.Contains(f.SystemName)))
