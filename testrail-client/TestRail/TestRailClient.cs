@@ -1189,6 +1189,9 @@ namespace TestRail
         {
             var strType = type.ToString().ToLower();
             var temp = _SendGetCommand<BulkAPI>(uri);
+            
+            if (temp.ThrownException != null) return new RequestResult<T>(temp.StatusCode, thrownException: temp.ThrownException);
+            
             var list = WrappedList<T>(temp.Payload.DataItems[strType].ToString());
 
             while (temp.Payload._Links.Next != null)
