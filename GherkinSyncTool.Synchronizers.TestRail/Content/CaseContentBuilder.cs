@@ -102,7 +102,13 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
                 foreach (var example in examples)
                 {
                     preconditions.AppendLine($"## {example.Keyword}: {example.Name}");
-
+                    if (!string.IsNullOrWhiteSpace(example.Description))
+                    {
+                        preconditions.AppendLine(example.Description);   
+                    }
+                    
+                    if(example.TableHeader is null) continue;
+                    
                     var tableRows = new List<TableRow> {example.TableHeader};
                     tableRows.AddRange(example.TableBody);
                     preconditions.AppendLine(ConvertToStringTable(tableRows));
