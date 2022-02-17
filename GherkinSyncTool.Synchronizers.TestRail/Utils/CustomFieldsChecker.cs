@@ -29,15 +29,23 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
             {
                 if (!actualCustomFieldNames.Contains(expectedCustomField))
                 {
-                    throw new ArgumentException($"\r\nOne of the required custom fields is missing: \"{expectedCustomField}\". Please check your TestRail case fields in customization menu\r\n");
-                } 
+                    throw new ArgumentException(
+                        $"\r\nOne of the required custom fields is missing: \"{expectedCustomField}\". Please check your TestRail case fields in customization menu\r\n");
+                }
             }
 
             foreach (var field in caseFields.Where(f => expectedCustomFields.Contains(f.SystemName)))
             {
-                var context = field.JsonFromResponse.ToObject<CustomFieldsModel>().Configs.First().Context;
+                var contexts = field.JsonFromResponse.ToObject<CustomFieldsModel>().Configs.Select(config => config.Context).ToList();
 
-                if (!context.IsGlobal && !context.ProjectIds.Contains(_testRailSettings.ProjectId))
+                if (contexts.Exists(context => context.IsGlobal))
+                {
+                    continue;
+                }
+
+                var projectIds = contexts.SelectMany(context => context.ProjectIds);
+
+                if (!projectIds.Contains(_testRailSettings.ProjectId))
                 {
                     throw new ArgumentException(
                         $"\r\nOne of the required fields: \"{field.SystemName}\" should be global or attached to the project with id: {_testRailSettings.ProjectId}\r\n");
