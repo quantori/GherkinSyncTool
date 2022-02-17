@@ -102,7 +102,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
                 foreach (var example in examples)
                 {
                     preconditions.AppendLine($"## {example.Keyword}: {example.Name}");
-                    if (!string.IsNullOrWhiteSpace(example.Description))
+                    if (!string.IsNullOrEmpty(example.Description))
                     {
                         preconditions.AppendLine(example.Description);   
                     }
