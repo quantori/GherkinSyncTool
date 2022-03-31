@@ -193,9 +193,9 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
             if(!testRailCase.Title.Equals(caseRequest.Title)) return false;
             if(!testRailCase.TemplateId.Equals(caseRequest.TemplateId)) return false;
 
-            if (testRailCase.References is null && caseRequest.References is not null) return false;
-            if (testRailCase.References is not null && caseRequest.References is null) return false;
-            if (testRailCase.References is not null && caseRequest.References is not null)
+            if (string.IsNullOrEmpty(testRailCase.References) && !string.IsNullOrEmpty(caseRequest.References)) return false;
+            if (!string.IsNullOrEmpty(testRailCase.References) && string.IsNullOrEmpty(caseRequest.References)) return false;
+            if (!string.IsNullOrEmpty(testRailCase.References) && !string.IsNullOrEmpty(caseRequest.References))
             {
                 if (!testRailCase.References!.Equals(caseRequest.References)) return false;
             }

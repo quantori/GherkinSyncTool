@@ -93,7 +93,7 @@ namespace TestRail.Types
             if (null != PriorityId) { jsonParams.priority_id = PriorityId.Value; }
             if (!string.IsNullOrWhiteSpace(Estimate)) { jsonParams.estimate = Estimate; }
             if (null != MilestoneId) { jsonParams.milestone_id = MilestoneId.Value; }
-            if (!string.IsNullOrWhiteSpace(References)) { jsonParams.refs = References; }
+            jsonParams.refs = References; 
             if (null != TemplateId) { jsonParams.template_id = TemplateId.Value; }
 
             return jsonParams;
