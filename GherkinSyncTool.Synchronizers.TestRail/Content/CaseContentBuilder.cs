@@ -122,7 +122,9 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
                     preconditions.AppendLine(ConvertToStringTable(tableRows));
                 }
             }
-            return preconditions.ToString();
+            
+            //Testrail Api convert ' to html encoded
+            return preconditions.ToString().Replace("'","&#39;");
         }
 
         private string ConvertToStringTable(List<TableRow> tableRows)
