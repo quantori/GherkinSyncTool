@@ -35,7 +35,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
             
             var addCaseResponse = policy.Execute(()=>
                 _testRailClient.AddCase(caseRequest.SectionId, caseRequest.Title, null,
-                    null, null, null, null, 
+                    null, null, null, caseRequest.References, 
                     caseRequest.JObjectCustomFields, caseRequest.TemplateId));
 
             ValidateRequestResult(addCaseResponse);
@@ -52,7 +52,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
             if (!IsTestCaseContentEqual(caseToUpdate, currentCase))
             {
                 var updateCaseResult = policy.Execute(()=>
-                    _testRailClient.UpdateCase(caseId, caseToUpdate.Title, null, null, null, null, null, 
+                    _testRailClient.UpdateCase(caseId, caseToUpdate.Title, null, null, null, null, caseToUpdate.References, 
                         caseToUpdate.JObjectCustomFields, caseToUpdate.TemplateId));
                 
                 ValidateRequestResult(updateCaseResult);
@@ -192,6 +192,13 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
         {
             if(!testRailCase.Title.Equals(caseRequest.Title)) return false;
             if(!testRailCase.TemplateId.Equals(caseRequest.TemplateId)) return false;
+
+            if (testRailCase.References is null && caseRequest.References is not null) return false;
+            if (testRailCase.References is not null && caseRequest.References is null) return false;
+            if (testRailCase.References is not null && caseRequest.References is not null)
+            {
+                if (!testRailCase.References!.Equals(caseRequest.References)) return false;
+            }
 
             var testRailCaseCustomFields = testRailCase.JsonFromResponse.ToObject<CaseCustomFields>();
             if (!JToken.DeepEquals(caseRequest.JObjectCustomFields, JObject.FromObject(testRailCaseCustomFields))) return false;

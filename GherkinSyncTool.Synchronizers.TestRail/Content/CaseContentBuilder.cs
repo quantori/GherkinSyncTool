@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Web;
 using Gherkin.Ast;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
@@ -13,7 +14,6 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
     public class CaseContentBuilder
     {
         private readonly TestRailSettings _testRailSettings = ConfigurationManager.GetConfiguration<TestRailConfigs>().TestRailSettings;
-        private readonly GherkinSyncToolConfig _gherkinSyncToolConfig = ConfigurationManager.GetConfiguration<GherkinSyncToolConfig>();
 
         public CaseRequest BuildCaseRequest(Scenario scenario, IFeatureFile featureFile, ulong sectionId)
         {
@@ -32,7 +32,8 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
                     Tags = ConvertToStringTags(scenario, featureFile),
                     GherkinSyncToolId = _testRailSettings.GherkinSyncToolId
                 },
-                TemplateId = templateId
+                TemplateId = templateId,
+                References = ConvertToStringReferences(scenario, featureFile),
             };
             return createCaseRequest;
         }
@@ -56,8 +57,8 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
             List<string> resultSteps = new List<string>();
             foreach (var step in steps)
             {
-                var keywordFormatted = $"__{step.Keyword.Trim()}__ ";
-                var stepFormatted = step.Text.Replace("<","___").Replace(">","___");
+                var keywordFormatted = $"**{step.Keyword.Trim()}** ";
+                var stepFormatted = step.Text.Replace("<","***").Replace(">","***");
                 
                 var fullStep = keywordFormatted + stepFormatted;
                 
@@ -79,12 +80,19 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
 
         private List<CustomStepsSeparated> ConvertToCustomStepsSeparated(List<string> steps)
         {
-            return steps.Select(step => new CustomStepsSeparated {Content = step}).ToList();
+            return steps.Select(step => new CustomStepsSeparated
+            {
+                //Testrail Api convert ' to html encoded
+                Content = step.Replace("'","&#39;")
+                
+            }).ToList();
         }
 
         private string ConvertToStringTags(Scenario scenario, IFeatureFile featureFile)
         {
             var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
+            //Remove references from tags to not duplicate with the reference field
+            allTags.RemoveAll(tag => tag.Name.Contains("@Reference:", StringComparison.InvariantCultureIgnoreCase));
             return allTags.Any() ? string.Join(", ", allTags.Select(tag => tag.Name.Substring(1))) : null;
         }
 
@@ -144,6 +152,20 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
             }
 
             return table.ToString();
+        }
+        
+        private string ConvertToStringReferences(Scenario scenario, IFeatureFile featureFile)
+        {
+            string result = null;
+            var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
+            var refList = allTags.Where(tag => tag.Name.Contains("@Reference:", StringComparison.InvariantCultureIgnoreCase)).ToList();
+            
+            if (refList.Any())
+            {
+                result = string.Join(",", refList.Select(x => x.Name.Replace("@Reference:","", StringComparison.InvariantCultureIgnoreCase)));
+            }
+
+            return result;
         }
     }
 }
