@@ -53,6 +53,9 @@ below. The template should not contain any required fields. An existing template
 | `tags`               | String |
 | `gherkinsynctool_id` | String |
 
+##### Tags
+- @Reference:JIRA-123 tag from a feature file will be parsed and filled as 'JIRA-123' to the appropriate testrail test case field.
+
 ## Configuration
 
 GherkinSyncTool can be configured in three ways. The priority corresponds to the list order.
