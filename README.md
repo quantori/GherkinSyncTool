@@ -54,7 +54,8 @@ below. The template should not contain any required fields. An existing template
 | `gherkinsynctool_id` | String |
 
 ##### Tags
-- @Reference:JIRA-123 tag from a feature file will be parsed and filled as 'JIRA-123' to the appropriate testrail test case field.
+- @Reference:JIRA-123 tag from a feature file will be parsed and filled as 'JIRA-123' to the reference testrail test case field.
+- @Priority:High tag from a feature file will be parsed and filled as 'High' to the priority testrail test case field.
 
 ## Configuration
 
