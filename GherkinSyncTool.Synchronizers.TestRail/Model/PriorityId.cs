@@ -1,6 +1,6 @@
 ﻿namespace GherkinSyncTool.Synchronizers.TestRail.Model
 {
-    public enum PriorityId : byte
+    public enum PriorityId
     {
         Low = 1,
         Medium = 2,
