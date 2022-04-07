@@ -244,13 +244,13 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
             var result = new Dictionary<uint, string>();
             //Get possible automation types
             var automationTypes = _testRailCaseFields.CaseFields.FirstOrDefault(field => field.SystemName.Equals("custom_automation_type"));
-            //Parse current tag
-            var testRailAutomationTypes = automationTypes?.JsonFromResponse.ToObject<CustomFieldsModel>().Configs.Select(config => config.Options.Items)
+            
+            var automationTypesString = automationTypes?.JsonFromResponse.ToObject<CustomFieldsModel>().Configs.Select(config => config.Options.Items)
                 .FirstOrDefault();
-            //
-            if (testRailAutomationTypes is not null)
+            
+            if (automationTypesString is not null)
             {
-                var list = testRailAutomationTypes.Split("\n");
+                var list = automationTypesString.Split("\n");
                 foreach (var item in list)
                 {
                     var automationType = item.Split(",");
