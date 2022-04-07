@@ -13,6 +13,21 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Model
     {
         [JsonProperty("context")]
         public CustomFieldContext Context { get; set; }
+        
+        [JsonProperty("options")]
+        public CustomFieldOptions Options { get; set; }
+    }
+    
+    public class CustomFieldOptions
+    {
+        [JsonProperty("is_required")]
+        public bool IsRequired { get; set; }
+        
+        [JsonProperty("default_value")]
+        public string DefaultValue { get; set; }
+        
+        [JsonProperty("items")]
+        public string Items { get; set; }
     }
 
     public class CustomFieldContext
