@@ -12,7 +12,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
             builder.RegisterType<TestRailClientWrapper>().SingleInstance();
             builder.RegisterType<CaseContentBuilder>().SingleInstance();
             builder.RegisterType<SectionSynchronizer>().SingleInstance();
-            builder.RegisterType<CustomFieldsChecker>().SingleInstance();
+            builder.RegisterType<TestRailCaseFields>().SingleInstance();
         }
     }
 }

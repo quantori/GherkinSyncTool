@@ -46,16 +46,18 @@ GherkinSyncTool has the next ways how to run:
 TestRail's API should be enabled. In order for the tool to work correctly, the TestRail test template should have the custom fields that are presented in the table
 below. The template should not contain any required fields. An existing template can be used or a new one created.
 
-| System Name          | Type   |
-| -------------------- | ------ |
-| `preconds`           | Text   |
-| `steps_separated`    | Step   |
-| `tags`               | String |
-| `gherkinsynctool_id` | String |
+| System Name          | Type     |
+|----------------------|----------|
+| `preconds`           | Text     |
+| `steps_separated`    | Step     |
+| `tags`               | String   |
+| `gherkinsynctool_id` | String   |
+| `automation_type`    | Dropdown |
 
 ##### Tags
 - @Reference:JIRA-123 tag from a feature file will be parsed and filled as 'JIRA-123' to the reference testrail test case field.
 - @Priority:High tag from a feature file will be parsed and filled as 'High' to the priority testrail test case field.
+- @Automated:UI tag from a feature file will be parsed and filled as 'UI' to the automation type testrail test case field.
 
 ## Configuration
 

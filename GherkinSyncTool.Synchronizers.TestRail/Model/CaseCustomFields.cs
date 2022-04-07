@@ -16,5 +16,8 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Model
         
         [JsonProperty("custom_gherkinsynctool_id")] 
         public string GherkinSyncToolId { get; init; }
+        
+        [JsonProperty("custom_automation_type")] 
+        public uint? AutomationType { get; init; }
     }
 }

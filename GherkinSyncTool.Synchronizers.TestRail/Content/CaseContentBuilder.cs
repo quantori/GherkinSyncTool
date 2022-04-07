@@ -8,6 +8,7 @@ using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Models.Utils;
 using GherkinSyncTool.Synchronizers.TestRail.Model;
+using GherkinSyncTool.Synchronizers.TestRail.Utils;
 using NLog;
 
 namespace GherkinSyncTool.Synchronizers.TestRail.Content
@@ -17,10 +18,15 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
         private readonly TestRailSettings _testRailSettings = ConfigurationManager.GetConfiguration<TestRailConfigs>().TestRailSettings;
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
         private readonly Context _context;
+        private readonly TestRailCaseFields _testRailCaseFields;
 
-        public CaseContentBuilder(Context context)
+        private Dictionary<uint, string> _testRailAutomationTypesDir;
+        public Dictionary<uint, string> TestRailAutomationTypesDir => _testRailAutomationTypesDir ??= GetTestRailAutomationTypes();
+
+        public CaseContentBuilder(Context context, TestRailCaseFields testRailCaseFields)
         {
             _context = context;
+            _testRailCaseFields = testRailCaseFields;
         }
 
         public CaseRequest BuildCaseRequest(Scenario scenario, IFeatureFile featureFile, ulong sectionId)
@@ -38,7 +44,8 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
                     Preconditions = ConvertToStringPreconditions(scenario, featureFile),
                     StepsSeparated = ConvertToCustomStepsSeparated(steps),
                     Tags = ConvertToStringTags(scenario, featureFile),
-                    GherkinSyncToolId = _testRailSettings.GherkinSyncToolId
+                    GherkinSyncToolId = _testRailSettings.GherkinSyncToolId,
+                    AutomationType = ConvertToIntAutomationType(scenario, featureFile)
                 },
                 TemplateId = templateId,
                 References = ConvertToStringReferences(scenario, featureFile),
@@ -47,15 +54,39 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
             return createCaseRequest;
         }
 
+        private uint? ConvertToIntAutomationType(Scenario scenario, IFeatureFile featureFile)
+        {
+            var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
+            var automatedTag = allTags.LastOrDefault(tag => tag.Name.Contains(TagsConstants.Automation, StringComparison.InvariantCultureIgnoreCase));
+            
+            uint? result = null;
+            if (automatedTag is not null)
+            {
+                var automatedString = automatedTag.Name.Replace(TagsConstants.Automation, "", StringComparison.InvariantCultureIgnoreCase);
+                try
+                {
+                    result = TestRailAutomationTypesDir.First(pair => pair.Value.Equals(automatedString)).Key;
+                }
+                catch (InvalidOperationException e)
+                {
+                    var automationTypesNames = string.Join(",", TestRailAutomationTypesDir.Values);
+                    Log.Error(e, $"'{automatedString}' is incorrect automation type for scenario: '{scenario.Name}'. Valid automation types are: {automationTypesNames}.");
+                    _context.IsRunSuccessful = false;
+                }
+            }
+
+            return result;
+        }
+
         private PriorityId ConvertToPriorityId(Scenario scenario, IFeatureFile featureFile)
         {
             var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
-            var priorityTag = allTags.LastOrDefault(tag => tag.Name.Contains("@Priority:", StringComparison.InvariantCultureIgnoreCase));
+            var priorityTag = allTags.LastOrDefault(tag => tag.Name.Contains(TagsConstants.Priority, StringComparison.InvariantCultureIgnoreCase));
 
             var result = PriorityId.Medium;
             if (priorityTag is not null)
             {
-                var priorityString = priorityTag.Name.Replace("@Priority:", "", StringComparison.InvariantCultureIgnoreCase);
+                var priorityString = priorityTag.Name.Replace(TagsConstants.Priority, "", StringComparison.InvariantCultureIgnoreCase);
                 try
                 {
                     result = Enum.Parse<PriorityId>(priorityString, true);
@@ -63,7 +94,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
                 catch (ArgumentException e)
                 {
                     var priorityNames = string.Join(",", Enum.GetNames(typeof(PriorityId)));
-                    Log.Error(e, $"Incorrect priority for scenario: '{scenario.Name}'. Valid priorities are: {priorityNames}.");
+                    Log.Error(e, $"'{priorityString}' Incorrect priority for scenario: '{scenario.Name}'. Valid priorities are: {priorityNames}.");
                     _context.IsRunSuccessful = false;
                 }
             }
@@ -125,9 +156,11 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
         {
             var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
             //Remove references from tags to not duplicate with the reference field
-            allTags.RemoveAll(tag => tag.Name.Contains("@Reference:", StringComparison.InvariantCultureIgnoreCase));
+            allTags.RemoveAll(tag => tag.Name.Contains(TagsConstants.Reference, StringComparison.InvariantCultureIgnoreCase));
             //Remove priority from tags to not duplicate with the reference field
-            allTags.RemoveAll(tag => tag.Name.Contains("@Priority:", StringComparison.InvariantCultureIgnoreCase));
+            allTags.RemoveAll(tag => tag.Name.Contains(TagsConstants.Priority, StringComparison.InvariantCultureIgnoreCase));
+            //Remove automation type from tags to not duplicate with the automation type field
+            allTags.RemoveAll(tag => tag.Name.Contains(TagsConstants.Automation, StringComparison.InvariantCultureIgnoreCase));
             return allTags.Any() ? string.Join(", ", allTags.Select(tag => tag.Name.Substring(1))) : null;
         }
 
@@ -196,11 +229,33 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
         {
             string result = null;
             var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
-            var refList = allTags.Where(tag => tag.Name.Contains("@Reference:", StringComparison.InvariantCultureIgnoreCase)).ToList();
+            var refList = allTags.Where(tag => tag.Name.Contains(TagsConstants.Reference, StringComparison.InvariantCultureIgnoreCase)).ToList();
 
             if (refList.Any())
             {
-                result = string.Join(",", refList.Select(x => x.Name.Replace("@Reference:", "", StringComparison.InvariantCultureIgnoreCase)));
+                result = string.Join(",", refList.Select(x => x.Name.Replace(TagsConstants.Reference, "", StringComparison.InvariantCultureIgnoreCase)));
+            }
+
+            return result;
+        }
+
+        private Dictionary<uint, string> GetTestRailAutomationTypes()
+        {
+            var result = new Dictionary<uint, string>();
+            //Get possible automation types
+            var automationTypes = _testRailCaseFields.CaseFields.FirstOrDefault(field => field.SystemName.Equals("custom_automation_type"));
+            //Parse current tag
+            var testRailAutomationTypes = automationTypes?.JsonFromResponse.ToObject<CustomFieldsModel>().Configs.Select(config => config.Options.Items)
+                .FirstOrDefault();
+            //
+            if (testRailAutomationTypes is not null)
+            {
+                var list = testRailAutomationTypes.Split("\n");
+                foreach (var item in list)
+                {
+                    var automationType = item.Split(",");
+                    result!.Add(uint.Parse(automationType[0]), automationType[1].Trim());
+                }
             }
 
             return result;
