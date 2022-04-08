@@ -51,7 +51,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
             if (!IsTestCaseContentEqual(caseToUpdate, currentCase))
             {
                 var updateCaseResult = policy.Execute(() =>
-                    _testRailClient.UpdateCase(caseId, caseToUpdate.Title, null, (ulong?)caseToUpdate.PriorityId, null, null, caseToUpdate.References,
+                    _testRailClient.UpdateCase(caseId, caseToUpdate.Title, null, caseToUpdate.PriorityId, null, null, caseToUpdate.References,
                         caseToUpdate.JObjectCustomFields, caseToUpdate.TemplateId));
 
                 ValidateRequestResult(updateCaseResult);
