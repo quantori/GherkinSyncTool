@@ -15,7 +15,9 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
         private readonly TestRailClientWrapper _testRailClientWrapper;
         private readonly TestRailSettings _testRailSettings = ConfigurationManager.GetConfiguration<TestRailConfigs>().TestRailSettings;
         private List<CaseField> _caseFields;
+        private List<Priority> _casePriorities;
         public IEnumerable<CaseField> CaseFields => _caseFields ??= _testRailClientWrapper.GetCaseFields().ToList();
+        public IEnumerable<Priority> CasePriorities => _casePriorities ??= _testRailClientWrapper.GetCasePriorities().ToList();
 
         public TestRailCaseFields(TestRailClientWrapper testRailClientWrapper)
         {

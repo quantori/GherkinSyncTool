@@ -32,10 +32,9 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
         public Case AddCase(CaseRequest caseRequest)
         {
             var policy = CreateResultHandlerPolicy<Case>();
-            
-            var addCaseResponse = policy.Execute(()=>
-                _testRailClient.AddCase(caseRequest.SectionId, caseRequest.Title, null,
-                    (ulong?)caseRequest.PriorityId, null, null, caseRequest.References, 
+
+            var addCaseResponse = policy.Execute(() =>
+                _testRailClient.AddCase(caseRequest.SectionId, caseRequest.Title, null, caseRequest.PriorityId, null, null, caseRequest.References,
                     caseRequest.JObjectCustomFields, caseRequest.TemplateId));
 
             ValidateRequestResult(addCaseResponse);
@@ -47,14 +46,14 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
         public void UpdateCase(Case currentCase, CaseRequest caseToUpdate)
         {
             var policy = CreateResultHandlerPolicy<Case>();
-            var caseId = currentCase.Id ?? 
+            var caseId = currentCase.Id ??
                          throw new ArgumentException("Case Id cannot be null");
             if (!IsTestCaseContentEqual(caseToUpdate, currentCase))
             {
-                var updateCaseResult = policy.Execute(()=>
-                    _testRailClient.UpdateCase(caseId, caseToUpdate.Title, null, (ulong?)caseToUpdate.PriorityId, null, null, caseToUpdate.References, 
+                var updateCaseResult = policy.Execute(() =>
+                    _testRailClient.UpdateCase(caseId, caseToUpdate.Title, null, caseToUpdate.PriorityId, null, null, caseToUpdate.References,
                         caseToUpdate.JObjectCustomFields, caseToUpdate.TemplateId));
-                
+
                 ValidateRequestResult(updateCaseResult);
 
                 Log.Info($"Updated: [{caseId}] {caseToUpdate.Title}");
@@ -64,49 +63,50 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
                 Log.Info($"Up-to-date: [{caseId}] {caseToUpdate.Title}");
             }
         }
-        
+
         public IList<Case> GetCases()
         {
             var policy = CreateResultHandlerPolicy<IList<Case>>();
-            var cases = policy.Execute(()=>
+            var cases = policy.Execute(() =>
                 _testRailClient.GetCases(_testRailSettings.ProjectId, _testRailSettings.SuiteId, null, _testRailSettings.TemplateId));
-            
+
             ValidateRequestResult(cases);
 
             var gherkinToolCases = cases.Payload.Where(c =>
             {
                 var caseCustomFields = c.JsonFromResponse.ToObject<CaseCustomFields>();
-                return caseCustomFields.GherkinSyncToolId is not null && caseCustomFields.GherkinSyncToolId.Equals(_testRailSettings.GherkinSyncToolId);
+                return caseCustomFields.GherkinSyncToolId is not null &&
+                       caseCustomFields.GherkinSyncToolId.Equals(_testRailSettings.GherkinSyncToolId);
             });
 
             return gherkinToolCases.ToList();
         }
-        
+
         public void DeleteCases(List<ulong> caseIds)
         {
-            if(!caseIds.Any()) return;
+            if (!caseIds.Any()) return;
             Log.Debug("Deleting scenarios which are not exist.");
             var policy = CreateResultHandlerPolicy<BaseTestRailType>();
-            var cases = policy.Execute(()=>
+            var cases = policy.Execute(() =>
                 _testRailClient.DeleteCases(_testRailSettings.ProjectId, caseIds, _testRailSettings.SuiteId, true));
-            
+
             ValidateRequestResult(cases);
-            
+
             Log.Info($"Deleted cases: {string.Join(", ", caseIds)}");
         }
 
         public ulong? CreateSection(CreateSectionRequest request)
         {
             var policy = CreateResultHandlerPolicy<Section>();
-            
-            var response = policy.Execute(()=>
+
+            var response = policy.Execute(() =>
                 _testRailClient.AddSection(
                     request.ProjectId,
                     request.SuiteId,
-                    request.Name, 
-                    request.ParentId, 
+                    request.Name,
+                    request.ParentId,
                     request.Description));
-            
+
             ValidateRequestResult(response);
             Log.Info($"Section created: [{response.Payload.Id}] {response.Payload.Name}");
 
@@ -116,7 +116,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
         public IEnumerable<Section> GetSections(ulong projectId)
         {
             var policy = CreateResultHandlerPolicy<IList<Section>>();
-            var result = policy.Execute(()=>_testRailClient.GetSections(projectId));
+            var result = policy.Execute(() => _testRailClient.GetSections(projectId));
             ValidateRequestResult(result);
             return result.Payload;
         }
@@ -125,10 +125,10 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
         {
             if (requestResult.StatusCode != HttpStatusCode.OK)
             {
-                if(!string.IsNullOrEmpty(requestResult.RawJson) &&
-                   requestResult.RawJson.Contains("not a valid test case"))
+                if (!string.IsNullOrEmpty(requestResult.RawJson) &&
+                    requestResult.RawJson.Contains("not a valid test case"))
                     throw new TestRailNoCaseException("Case not found", requestResult.ThrownException);
-                
+
                 throw new TestRailException(
                     $"There is an issue with requesting TestRail: {requestResult.StatusCode.ToString()} " +
                     $"{Environment.NewLine}{requestResult.RawJson}",
@@ -147,7 +147,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
         {
             Log.Debug("Moving testcases to new sections.");
             var policy = CreateResultHandlerPolicy<BaseTestRailType>();
-            var result = policy.Execute(()=>
+            var result = policy.Execute(() =>
                 _testRailClient.MoveCases(newSectionId, caseIds));
             ValidateRequestResult(result);
             Log.Info($"Moved cases: {string.Join(", ", caseIds)} to section {newSectionId}");
@@ -157,8 +157,8 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
         {
             Log.Debug("Moving section");
             var policy = CreateResultHandlerPolicy<Section>();
-            var result = policy.Execute(()=>
-                _testRailClient.MoveSection(sectionId,parentId,afterId));
+            var result = policy.Execute(() =>
+                _testRailClient.MoveSection(sectionId, parentId, afterId));
             ValidateRequestResult(result);
             Log.Info($"Section moved: [{result.Payload.Id}] {result.Payload.Name}");
         }
@@ -173,6 +173,16 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
             return caseFields.Payload;
         }
 
+        public IEnumerable<Priority> GetCasePriorities()
+        {
+            Log.Debug("Getting case priorities");
+            var policy = CreateResultHandlerPolicy<IList<Priority>>();
+            var priorities = policy.Execute(() =>
+                _testRailClient.GetPriorities());
+            ValidateRequestResult(priorities);
+            return priorities.Payload;
+        }
+
         /// <summary>
         /// RetryPolicy for request result of given type 
         /// </summary>
@@ -180,18 +190,19 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
         /// <returns></returns>
         private RetryPolicy<RequestResult<T>> CreateResultHandlerPolicy<T>()
         {
-            return Policy.HandleResult<RequestResult<T>>(r=>(int)r.StatusCode < 200 || (int)r.StatusCode > 299)
+            return Policy.HandleResult<RequestResult<T>>(r => (int)r.StatusCode < 200 || (int)r.StatusCode > 299)
                 .WaitAndRetry(_testRailSettings.RetriesCount, retryAttempt =>
                 {
-                    Log.Debug($"Attempt {retryAttempt} of {_testRailSettings.RetriesCount}, waiting for {_testRailSettings.PauseBetweenRetriesSeconds} seconds");
+                    Log.Debug(
+                        $"Attempt {retryAttempt} of {_testRailSettings.RetriesCount}, waiting for {_testRailSettings.PauseBetweenRetriesSeconds} seconds");
                     return TimeSpan.FromSeconds(_testRailSettings.PauseBetweenRetriesSeconds);
                 });
         }
 
         private static bool IsTestCaseContentEqual(CaseRequest caseRequest, Case testRailCase)
         {
-            if(!testRailCase.Title.Equals(caseRequest.Title)) return false;
-            if(!testRailCase.TemplateId.Equals(caseRequest.TemplateId)) return false;
+            if (!testRailCase.Title.Equals(caseRequest.Title)) return false;
+            if (!testRailCase.TemplateId.Equals(caseRequest.TemplateId)) return false;
 
             if (string.IsNullOrEmpty(testRailCase.References) && !string.IsNullOrEmpty(caseRequest.References)) return false;
             if (!string.IsNullOrEmpty(testRailCase.References) && string.IsNullOrEmpty(caseRequest.References)) return false;
@@ -199,12 +210,12 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
             {
                 if (!testRailCase.References!.Equals(caseRequest.References)) return false;
             }
-            
-            if (!testRailCase.PriorityId.Equals((ulong?) caseRequest.PriorityId)) return false;
+
+            if (!testRailCase.PriorityId.Equals((ulong?)caseRequest.PriorityId)) return false;
 
             var testRailCaseCustomFields = testRailCase.JsonFromResponse.ToObject<CaseCustomFields>();
             if (!JToken.DeepEquals(caseRequest.JObjectCustomFields, JObject.FromObject(testRailCaseCustomFields))) return false;
-            
+
             return true;
         }
     }

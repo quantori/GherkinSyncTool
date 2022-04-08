@@ -65,11 +65,11 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
                 var automatedString = automatedTag.Name.Replace(TagsConstants.Automation, "", StringComparison.InvariantCultureIgnoreCase);
                 try
                 {
-                    result = TestRailAutomationTypesDir.First(pair => pair.Value.Equals(automatedString)).Key;
+                    result = TestRailAutomationTypesDir.First(pair => pair.Value.Equals(automatedString, StringComparison.InvariantCultureIgnoreCase)).Key;
                 }
                 catch (InvalidOperationException e)
                 {
-                    var automationTypesNames = string.Join(",", TestRailAutomationTypesDir.Values);
+                    var automationTypesNames = string.Join(", ", TestRailAutomationTypesDir.Values);
                     Log.Error(e, $"'{automatedString}' is incorrect automation type for scenario: '{scenario.Name}'. Valid automation types are: {automationTypesNames}.");
                     _context.IsRunSuccessful = false;
                 }
@@ -78,28 +78,36 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
             return result;
         }
 
-        private PriorityId ConvertToPriorityId(Scenario scenario, IFeatureFile featureFile)
+        private ulong? ConvertToPriorityId(Scenario scenario, IFeatureFile featureFile)
         {
             var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
             var priorityTag = allTags.LastOrDefault(tag => tag.Name.Contains(TagsConstants.Priority, StringComparison.InvariantCultureIgnoreCase));
-
-            var result = PriorityId.Medium;
+            
+            var defaultPriority = _testRailCaseFields.CasePriorities
+                .Where(priority => priority.IsDefault)
+                .Select(priority => priority.Id).FirstOrDefault();
+            
             if (priorityTag is not null)
             {
                 var priorityString = priorityTag.Name.Replace(TagsConstants.Priority, "", StringComparison.InvariantCultureIgnoreCase);
-                try
+
+                var result = _testRailCaseFields.CasePriorities
+                    .Where(priority => priority.Name.Equals(priorityString, StringComparison.CurrentCultureIgnoreCase))
+                    .Select(priority => priority.Id).FirstOrDefault();
+                if (result != 0)
                 {
-                    result = Enum.Parse<PriorityId>(priorityString, true);
+                    return result;
                 }
-                catch (ArgumentException e)
-                {
-                    var priorityNames = string.Join(",", Enum.GetNames(typeof(PriorityId)));
-                    Log.Error(e, $"'{priorityString}' Incorrect priority for scenario: '{scenario.Name}'. Valid priorities are: {priorityNames}.");
-                    _context.IsRunSuccessful = false;
-                }
+                    
+                var priorityNames = string.Join(", ", _testRailCaseFields.CasePriorities.Select(priority => priority.Name));
+                Log.Error($"'{priorityString}' is incorrect priority for scenario: '{scenario.Name}'. Valid priorities are: {priorityNames}.");
+                _context.IsRunSuccessful = false;
+                    
+                return defaultPriority;
             }
 
-            return result;
+            return defaultPriority;
+
         }
 
         private List<string> GetSteps(Scenario scenario, IFeatureFile featureFile)

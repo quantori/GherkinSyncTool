@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-[3.9.0] - 2022-04-07
+[3.9.1] - 2022-04-07
 
-### Added
-- TestRail: added automation type parsing. @Automated:UI tag from a feature file will be parsed and filled as 'UI' to the automation type testrail test case field.
+### Changed
+- TestRail: refactor priority tag parsing.
