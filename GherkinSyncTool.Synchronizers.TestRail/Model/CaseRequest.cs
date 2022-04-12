@@ -4,12 +4,12 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Model
 {
     public class CaseRequest
     {
-        public ulong SectionId { get; init; }
-        public string Title { get; init; }
-        public CaseCustomFields CustomFields { get; init; }
-        public ulong? TemplateId { get; init; }
-        public string References { get; init; }
-        public ulong? PriorityId { get; init; }
+        public ulong SectionId { get; set; }
+        public string Title { get; set; }
+        public CaseCustomFields CustomFields { get; set; }
+        public ulong? TemplateId { get; set; }
+        public string References { get; set; }
+        public ulong? PriorityId { get; set; }
 
         public JObject JObjectCustomFields => CustomFields is not null ? JObject.FromObject(CustomFields) : null;
     }

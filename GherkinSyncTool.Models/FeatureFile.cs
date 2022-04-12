@@ -6,7 +6,7 @@ namespace GherkinSyncTool.Models
 {
     public class FeatureFile : IFeatureFile
     {
-        public GherkinDocument Document { get; init; }
+        public GherkinDocument Document { get; }
         public string AbsolutePath { get; }
         public string RelativePath { get; }
         
