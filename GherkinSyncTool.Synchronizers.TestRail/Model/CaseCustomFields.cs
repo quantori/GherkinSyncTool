@@ -6,18 +6,18 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Model
     public class CaseCustomFields
     {
         [JsonProperty("custom_preconds")] 
-        public string Preconditions { get; init; }
+        public string Preconditions { get; set; }
 
         [JsonProperty("custom_steps_separated")]
-        public List<CustomStepsSeparated> StepsSeparated { get; init; }
+        public List<CustomStepsSeparated> StepsSeparated { get; set; }
 
         [JsonProperty("custom_tags")] 
-        public string Tags { get; init; }
+        public string Tags { get; set; }
         
         [JsonProperty("custom_gherkinsynctool_id")] 
-        public string GherkinSyncToolId { get; init; }
+        public string GherkinSyncToolId { get; set; }
         
         [JsonProperty("custom_automation_type")] 
-        public uint? AutomationType { get; init; }
+        public uint? AutomationType { get; set; }
     }
 }

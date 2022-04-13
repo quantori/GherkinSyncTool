@@ -20,7 +20,7 @@ namespace GherkinSyncTool
     class Program
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
-        static readonly ContainerBuilder ContainerBuilder = new();
+        static readonly ContainerBuilder ContainerBuilder = new ContainerBuilder();
         public static readonly string Version = $"GherkinSyncTool v.{Assembly.GetExecutingAssembly().GetName().Version}{Environment.NewLine}"; 
         
         private static int Main(string[] args)
