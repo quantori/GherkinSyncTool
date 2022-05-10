@@ -179,6 +179,13 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Content
             preconditions.AppendLine(featureFile.Document.Feature.Description);
             preconditions.AppendLine($"## {scenario.Keyword}: {scenario.Name}");
             preconditions.AppendLine(scenario.Description);
+            
+            var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
+            if (background is not null && (!string.IsNullOrWhiteSpace(background.Name) || !string.IsNullOrWhiteSpace(background.Description)))
+            {
+                preconditions.AppendLine($"## {background.Keyword}: {background.Name}");
+                preconditions.AppendLine(background.Description);
+            }
 
             var examples = scenario.Examples.ToList();
             if (examples.Any())
