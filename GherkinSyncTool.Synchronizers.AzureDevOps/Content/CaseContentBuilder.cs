@@ -245,9 +245,11 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         private List<KeyValuePair<string, string>> ExtractStepsFromScenario(List<Step> steps, TestParameters testParameters)
         {
             var resultSteps = new List<KeyValuePair<string, string>>();
+            var stepKeywordTmp = string.Empty;
             foreach (var step in steps)
             {
-                var keywordFormatted = $"<span style=\"color:RoyalBlue\">{step.Keyword.Trim()}</span>";
+                var stepKeyword = step.Keyword.Trim();
+                var keywordFormatted = $"<span style=\"color:RoyalBlue\">{stepKeyword}</span>";
 
                 var stepFormatted = FormatTestParameters(testParameters, step.Text);
 
@@ -263,8 +265,13 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 {
                     fullStep += BuildTable(table.Rows.ToList(), testParameters);
                 }
-
-                resultSteps.Add(new KeyValuePair<string, string>(step.Keyword.Trim(), fullStep));
+                
+                if (stepKeyword.Equals("And", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    stepKeyword = stepKeywordTmp;
+                }
+                stepKeywordTmp = stepKeyword;
+                resultSteps.Add(new KeyValuePair<string, string>(stepKeyword, fullStep));
             }
 
             return resultSteps;
