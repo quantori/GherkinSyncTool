@@ -97,13 +97,14 @@ GherkinSyncTool can be configured in three ways. The priority corresponds to the
 
 ### Azure DevOps settings
 
-| Parameter           | Description                                                                       | Required |
-| ------------------- | --------------------------------------------------------------------------------- | :------: |
-| BaseUrl             | Azure DevOps URL address                                                          | Yes      |
-| PersonalAccessToken | Personal access token (PAT)                                                       | Yes      |
-| Project             | Name of a project                                                                 | Yes      |
-| Area                | Work item area path                                                               | No       |
-| GherkinSyncToolId   | ID for isolating usage of multiple GherkinSyncTools in one test management system | Yes      |
+| Parameter               | Description                                                                       | Required |
+|-------------------------|-----------------------------------------------------------------------------------| :------: |
+| BaseUrl                 | Azure DevOps URL address                                                          | Yes      |
+| PersonalAccessToken     | Personal access token (PAT)                                                       | Yes      |
+| Project                 | Name of a project                                                                 | Yes      |
+| Area                    | Work item area path                                                               | No       |
+| GherkinSyncToolId       | ID for isolating usage of multiple GherkinSyncTools in one test management system | Yes      |
+| SetThenStepsAsExpected  | Set "Then step" as Azure DevOps expected result                                   | No       |
 
 ## Usage
 
