@@ -201,14 +201,19 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             foreach (var step in steps)
             {
                 var testStep = testBase.CreateTestStep();
-                testStep.Title = step;
+                if (_azureDevopsSettings.SetThenStepsAsExpected && step.Key.Contains("Then", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    testStep.ExpectedResult = step.Value;
+                }
+                else testStep.Title = step.Value;
+
                 testBase.Actions.Add(testStep);
             }
 
             testBase.SaveActions(jsonPatchDocument);
         }
 
-        private List<string> GetStepsFromFeatureFile(Scenario scenario, IFeatureFile featureFile)
+        private List<KeyValuePair<string, string>> GetStepsFromFeatureFile(Scenario scenario, IFeatureFile featureFile)
         {
             var testParameters = GetTestParameters(scenario.Examples);
 
@@ -221,8 +226,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
 
                 for (var index = 0; index < backgroundSteps.Count; index++)
                 {
-                    backgroundSteps[index] =
-                        $"<span style=\"color:RoyalBlue\">Background:</span> {backgroundSteps[index]}";
+                    backgroundSteps[index] = new KeyValuePair<string, string>(backgroundSteps[index].Key,
+                        $"<span style=\"color:RoyalBlue\">Background:</span> {backgroundSteps[index].Value}");
                 }
 
                 return backgroundSteps.Concat(scenarioSteps).ToList();
@@ -231,12 +236,20 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
             return scenarioSteps;
         }
 
-        private List<string> ExtractStepsFromScenario(List<Step> steps, TestParameters testParameters)
+        /// <summary>
+        /// Get and format the steps list from the feature file scenario.
+        /// </summary>
+        /// <param name="steps"></param>
+        /// <param name="testParameters"></param>
+        /// <returns>List of step.Keyword + fully formatted step</returns>
+        private List<KeyValuePair<string, string>> ExtractStepsFromScenario(List<Step> steps, TestParameters testParameters)
         {
-            var resultSteps = new List<string>();
+            var resultSteps = new List<KeyValuePair<string, string>>();
+            var stepKeywordTmp = string.Empty;
             foreach (var step in steps)
             {
-                var keywordFormatted = $"<span style=\"color:RoyalBlue\">{step.Keyword.Trim()}</span>";
+                var stepKeyword = step.Keyword.Trim();
+                var keywordFormatted = $"<span style=\"color:RoyalBlue\">{stepKeyword}</span>";
 
                 var stepFormatted = FormatTestParameters(testParameters, step.Text);
 
@@ -252,8 +265,13 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 {
                     fullStep += BuildTable(table.Rows.ToList(), testParameters);
                 }
-
-                resultSteps.Add(fullStep);
+                
+                if (stepKeyword.Equals("And", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    stepKeyword = stepKeywordTmp;
+                }
+                stepKeywordTmp = stepKeyword;
+                resultSteps.Add(new KeyValuePair<string, string>(stepKeyword, fullStep));
             }
 
             return resultSteps;
@@ -277,7 +295,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
         private static string FormatTestParameters(TestParameters testParameters, string stringWithParameters, bool addSpaces = false)
         {
             stringWithParameters = stringWithParameters.EncodeHtml();
-            
+
             if (testParameters is null)
             {
                 return stringWithParameters;
@@ -308,7 +326,8 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 var spaceAfter = addSpaces && theNextCharacterAfterParameter == stringWithParameters.Length ? " " : string.Empty;
 
                 //Azure DevOps test parameters don't allow white spaces in a middle of a parameter.
-                stringWithParameters = stringWithParameters.Replace(parameter, $"<span style=\"color:LightSeaGreen\">{spaceBefore}@{param.Name.FormatStringToCamelCase()}{spaceAfter}</span>");
+                stringWithParameters = stringWithParameters.Replace(parameter,
+                    $"<span style=\"color:LightSeaGreen\">{spaceBefore}@{param.Name.FormatStringToCamelCase()}{spaceAfter}</span>");
             }
 
             return stringWithParameters;

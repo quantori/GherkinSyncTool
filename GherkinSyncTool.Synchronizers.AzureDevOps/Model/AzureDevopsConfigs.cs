@@ -38,5 +38,6 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Model
         public string Project { get; set; }
         public string Area { get; set; }
         public string GherkinSyncToolId { get; set; }
+        public bool SetThenStepsAsExpected { get; set; } = false;
     }
 }
