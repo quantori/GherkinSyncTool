@@ -383,6 +383,25 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Content
                 featureDescriptionFormatted = Regex.Replace(featureDescriptionFormatted, @"\n|\r\n", "<br>");
                 description.Append($"<p>{featureDescriptionFormatted}</p>");
             }
+            
+            var background = featureFile.Document.Feature.Children.OfType<Background>().SingleOrDefault();
+
+            if (!string.IsNullOrWhiteSpace(background?.Name))
+            {
+                description.Append($"<p><b>{background.Keyword}:</b> {background.Name.EncodeHtml()}</p>");
+            }
+
+            if (!string.IsNullOrWhiteSpace(background?.Description))
+            {
+                if (string.IsNullOrWhiteSpace(background.Name))
+                {
+                    description.Append($"<p><b>{background.Keyword}:</b></p>");
+                }
+
+                var backgroundDescriptionFormatted = background.Description.EncodeHtml();
+                backgroundDescriptionFormatted = Regex.Replace(backgroundDescriptionFormatted, @"\n|\r\n", "<br>");
+                description.Append($"<p>{backgroundDescriptionFormatted}</p>");
+            }
 
             description.Append($"<p><b>{scenario.Keyword}:</b> {scenario.Name.EncodeHtml()}</p>");
 
