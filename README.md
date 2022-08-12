@@ -7,6 +7,12 @@ in [Gherkin syntax](https://cucumber.io/docs/gherkin/) (also known as feature fi
 
 ![Diagram](Docs/Diagram.png)
 
+## How it works
+
+The GherkinSyncTool scans the files in the specified folder for the * .feature files. It sends API calls to a test
+management system to create or update test cases. Received test ID will be populated into the feature files as tags for
+the following synchronization. The test case id tag looks like this: `@tc:1234`. Important: the test case id tag should not be deleted from the file!
+
 ## Supported test management systems
 
 - TestRail
@@ -106,13 +112,7 @@ GherkinSyncTool can be configured in three ways. The priority corresponds to the
 | GherkinSyncToolId       | ID for isolating usage of multiple GherkinSyncTools in one test management system | Yes      |
 | SetThenStepsAsExpected  | Set "Then step" as Azure DevOps expected result                                   | No       |
 
-## Usage
-
-The GherkinSyncTool scans the files in the specified folder for the * .feature files. It sends API calls to a test
-management system to create or update test cases. Received test ID will be populated into the feature files as tags for
-the following synchronization.
-Test management system for synchronization is selected by the presence of a particular test management system settings.
-To add a new test management system for synchronization, implement the ISynchronizer interface.
+## Architecture
 
 ![Architecture](Docs/Architecture.png)
 
