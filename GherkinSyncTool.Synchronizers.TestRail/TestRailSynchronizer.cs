@@ -80,7 +80,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                     // Update scenarios that have tag id
                     if (tagId is not null)
                     {
-                        var caseId = GherkinHelper.GetTagIdUlong(tagId);
+                        var caseId = GherkinHelper.GetTagId(tagId);
                         featureFilesTagIds.Add(caseId);
                             
                         var testRailCase = testRailCases.FirstOrDefault(c => c.Id == caseId);

@@ -30,6 +30,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\GherkinSyncTool.Models\GherkinSyncTool.Models.csproj" />
+      <ProjectReference Include="..\GherkinSyncTool.Synchronizers.AllureTestOps\GherkinSyncTool.Synchronizers.AllureTestOps.csproj" />
       <ProjectReference Include="..\GherkinSyncTool.Synchronizers.AzureDevOps\GherkinSyncTool.Synchronizers.AzureDevOps.csproj" />
       <ProjectReference Include="..\GherkinSyncTool.Synchronizers.TestRail\GherkinSyncTool.Synchronizers.TestRail.csproj" />
       <ProjectReference Include="..\testrail-client\TestRail\TestRail.csproj" />

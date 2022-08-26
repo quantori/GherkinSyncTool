@@ -88,7 +88,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps
                     // Update scenarios that have tag id
                     if (tagId is not null)
                     {
-                        var caseId = (int)GherkinHelper.GetTagIdUlong(tagId);
+                        var caseId = (int)GherkinHelper.GetTagId(tagId);
                         if (testCasesIdFromAzureDevops.Contains(caseId))
                         {
                             try
