@@ -45,14 +45,14 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         public IEnumerable<Quantori.AllureTestOpsClient.Model.Content> GetAllTestCases()
         {
             var allContent = new List<Quantori.AllureTestOpsClient.Model.Content>();
-            var isLastElementOnThePag = false;
+            var isLastElementOnThePage = false;
             var page = 0;
-            while (!isLastElementOnThePag)
+            while (!isLastElementOnThePage)
             {
                 var response = _allureClient.GetTestCasesAsync(_azureDevopsSettings.ProjectId, page).Result;
                 ValidateResponse(response);
                 page++;
-                isLastElementOnThePag = response.Content!.Last;
+                isLastElementOnThePage = response.Content!.Last;
                 allContent.AddRange(response.Content!.Content);
             }
 

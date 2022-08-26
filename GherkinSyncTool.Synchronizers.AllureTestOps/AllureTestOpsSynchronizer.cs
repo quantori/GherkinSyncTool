@@ -35,12 +35,12 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
             Log.Info("# Start synchronization with Allure TestOps");
 
             var allureTestCases = _allureClient.GetAllTestCases().ToList();
-            
+
             foreach (var featureFile in featureFiles)
             {
-                var insertedTagIds = 0;
-                
-                foreach (var scenario in featureFile.Document.Feature.Children.OfType< Scenario>())
+                var insertedTagIdsCount = 0;
+
+                foreach (var scenario in featureFile.Document.Feature.Children.OfType<Scenario>())
                 {
                     var tagId = scenario.Tags.FirstOrDefault(tag => tag.Name.Contains(_gherkinSyncToolConfig.TagIdPrefix));
 
@@ -49,10 +49,10 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                     // Create test case for feature file which is getting synced for the first time, so no tag id present.  
                     if (tagId is null)
                     {
-                        TestCase addCase;
+                        TestCase newTestCase;
                         try
                         {
-                            addCase = _allureClient.AddTestCase(caseRequest);
+                            newTestCase = _allureClient.AddTestCase(caseRequest);
                         }
                         catch (AllureException e)
                         {
@@ -61,11 +61,11 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                             continue;
                         } 
                         
-                        var lineNumberToInsert = scenario.Location.Line - 1 + insertedTagIds;
-                        var formattedTagId = GherkinHelper.FormatTagId(addCase.Id.ToString());
+                        var lineNumberToInsert = scenario.Location.Line - 1 + insertedTagIdsCount;
+                        var formattedTagId = GherkinHelper.FormatTagId(newTestCase.Id.ToString());
                         TextFilesEditMethods.InsertLineToTheFile(featureFile.AbsolutePath, lineNumberToInsert,
                             formattedTagId);
-                        insertedTagIds++;
+                        insertedTagIdsCount++;
                     }
 
                     // Update scenarios that have tag id
@@ -77,10 +77,10 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                         if (allureTestCase is null)
                         {
                             Log.Warn($"Case with id {caseIdFromFile} not found. Recreating missing case");
-                            TestCase addCase;
+                            TestCase newTestCase;
                             try
                             {
-                                addCase = _allureClient.AddTestCase(caseRequest);
+                                newTestCase = _allureClient.AddTestCase(caseRequest);
                             }
                             catch (AllureException e)
                             {
@@ -88,9 +88,9 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                                 _context.IsRunSuccessful = false;
                                 continue;
                             }
-                            var formattedTagId = GherkinHelper.FormatTagId(addCase.Id.ToString());
+                            var formattedTagId = GherkinHelper.FormatTagId(newTestCase.Id.ToString());
                             TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath,
-                                tagId.Location.Line - 1 + insertedTagIds, formattedTagId);
+                                tagId.Location.Line - 1 + insertedTagIdsCount, formattedTagId);
                         }
                         else
                         {
