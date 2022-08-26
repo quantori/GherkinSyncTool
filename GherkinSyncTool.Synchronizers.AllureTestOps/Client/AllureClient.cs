@@ -78,6 +78,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         {
             var response = _allureClient.CreateTestCaseAsync(caseRequest).Result;
             ValidateResponse(response);
+            Log.Info($"Created: [{response.Content!.Id}] {response.Content.Name}");
             return response.Content;
         }
 
@@ -109,6 +110,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         private static bool IsTestCaseContentEqual(Quantori.AllureTestOpsClient.Model.Content currentCase, TestCaseRequest caseToUpdate)
         {
             if (!currentCase.Name.Equals(caseToUpdate.Name)) return false;
+            if (!currentCase.Automated.Equals(caseToUpdate.Automated)) return false;
             return true;
         }
     }

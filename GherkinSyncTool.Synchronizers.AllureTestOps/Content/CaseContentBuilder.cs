@@ -5,6 +5,7 @@ using System.Text;
 using Gherkin.Ast;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
+using GherkinSyncTool.Models.Utils;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Model;
 using Quantori.AllureTestOpsClient.Model;
 using Scenario = Gherkin.Ast.Scenario;
@@ -14,8 +15,9 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Content;
 
 public class CaseContentBuilder
 {
-    private readonly AllureTestOpsSettings _allureTestOpsSettings = ConfigurationManager.GetConfiguration<AllureTestOpsConfigs>().AllureTestOpsSettings;
-    
+    private readonly AllureTestOpsSettings _allureTestOpsSettings =
+        ConfigurationManager.GetConfiguration<AllureTestOpsConfigs>().AllureTestOpsSettings;
+
     public CreateTestCaseRequest BuildCaseRequest(Scenario scenario, IFeatureFile featureFile)
     {
         var steps = GetSteps(scenario, featureFile);
@@ -24,11 +26,18 @@ public class CaseContentBuilder
         {
             Name = scenario.Name,
             ProjectId = _allureTestOpsSettings.ProjectId,
+            Automated = IsAutomated(scenario, featureFile)
         };
 
         return caseRequest;
     }
-    
+
+    private bool IsAutomated(Scenario scenario, IFeatureFile featureFile)
+    {
+        var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
+        return allTags.Exists(tag => tag.Name.Contains(TagsConstants.Automated, StringComparison.InvariantCultureIgnoreCase));
+    }
+
     private List<string> GetSteps(Scenario scenario, IFeatureFile featureFile)
     {
         var scenarioSteps = ExtractSteps(scenario.Steps.ToList());
@@ -68,7 +77,7 @@ public class CaseContentBuilder
 
         return resultSteps;
     }
-    
+
     private string ConvertToStringTable(List<TableRow> tableRows)
     {
         var table = new StringBuilder();
