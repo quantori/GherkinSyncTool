@@ -41,6 +41,6 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="updateTestCaseRequest"></param>
         /// <returns></returns>
         [Patch("/api/rs/testcase/{Id}")]
-        Task<IApiResponse<TestCase>> UpdateTestCaseAsync([AliasAs("id")] ulong testCaseId, [Body] UpdateTestCaseRequest updateTestCaseRequest);
+        Task<IApiResponse<TestCase>> UpdateTestCaseAsync([AliasAs("id")] ulong testCaseId, [Body] TestCaseRequest updateTestCaseRequest);
     }
 }

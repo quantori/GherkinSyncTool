@@ -94,11 +94,11 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             if (!IsTestCaseContentEqual(currentCase, caseToUpdate))
             {
                 
-                var response = _allureClient.UpdateTestCaseAsync(currentCase.Id, (UpdateTestCaseRequest) caseToUpdate).Result;
+                var response = _allureClient.UpdateTestCaseAsync(currentCase.Id, caseToUpdate).Result;
  
                 ValidateResponse(response);
             
-                Log.Info($"Updated: [{currentCase.Id}] {currentCase.Name}");
+                Log.Info($"Updated: [{currentCase.Id}] {caseToUpdate.Name}");
             }
             else
             {

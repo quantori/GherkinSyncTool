@@ -49,17 +49,8 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                     // Create test case for feature file which is getting synced for the first time, so no tag id present.  
                     if (tagId is null)
                     {
-                        TestCase newTestCase;
-                        try
-                        {
-                            newTestCase = _allureClient.AddTestCase(caseRequest);
-                        }
-                        catch (AllureException e)
-                        {
-                            Log.Error(e, $"The test case has not been created: {scenario.Name}");
-                            _context.IsRunSuccessful = false;
-                            continue;
-                        } 
+                        var newTestCase = CreateTestCase(caseRequest);
+                        if(newTestCase is null) continue;
                         
                         var lineNumberToInsert = scenario.Location.Line - 1 + insertedTagIdsCount;
                         var formattedTagId = GherkinHelper.FormatTagId(newTestCase.Id.ToString());
@@ -77,17 +68,9 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                         if (allureTestCase is null)
                         {
                             Log.Warn($"Case with id {caseIdFromFile} not found. Recreating missing case");
-                            TestCase newTestCase;
-                            try
-                            {
-                                newTestCase = _allureClient.AddTestCase(caseRequest);
-                            }
-                            catch (AllureException e)
-                            {
-                                Log.Error(e, $"The case has not been created: {scenario.Name}");
-                                _context.IsRunSuccessful = false;
-                                continue;
-                            }
+                            var newTestCase = CreateTestCase(caseRequest);
+                            if(newTestCase is null) continue;
+                            
                             var formattedTagId = GherkinHelper.FormatTagId(newTestCase.Id.ToString());
                             TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath,
                                 tagId.Location.Line - 1 + insertedTagIdsCount, formattedTagId);
@@ -100,7 +83,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                             }
                             catch (AllureException e)
                             {
-                                Log.Error(e, $"The test case has not been updated: {scenario.Name}");
+                                Log.Error(e, $"The test case has not been updated: {caseRequest.Name}");
                                 _context.IsRunSuccessful = false;
                             }
                         }
@@ -109,6 +92,22 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
             }
 
             Log.Debug(@$"Synchronization with Allure TestOps finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
+        }
+
+        private TestCase CreateTestCase(CreateTestCaseRequest caseRequest)
+        {
+            TestCase result = null;
+            try
+            {
+                result = _allureClient.AddTestCase(caseRequest);
+                return result;
+            }
+            catch (AllureException e)
+            {
+                Log.Error(e, $"The case has not been created: {caseRequest.Name}");
+                _context.IsRunSuccessful = false;
+                return result;
+            }
         }
     }
 }
