@@ -16,30 +16,4 @@ namespace Quantori.AllureTestOpsClient.Model
         public bool Last { get; set; }
         public bool Empty { get; set; }
     }
-    
-    public class Content
-    {
-        public ulong Id { get; set; }
-        public string Name { get; set; }
-        public Status Status { get; set; }
-        public TestLayer TestLayer { get; set; }
-        public bool Automated { get; set; }
-    }
-    
-    public class Pageable
-    {
-        public int Offset { get; set; }
-        public Sort Sort { get; set; }
-        public int PageSize { get; set; }
-        public bool Unpaged { get; set; }
-        public int PageNumber { get; set; }
-        public bool Paged { get; set; }
-    }
-
-    public class Sort
-    {
-        public bool Empty { get; set; }
-        public bool Sorted { get; set; }
-        public bool Unsorted { get; set; }
-    }
 }
