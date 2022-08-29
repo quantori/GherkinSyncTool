@@ -126,13 +126,6 @@ GherkinSyncTool can be configured in three ways. The priority corresponds to the
 | ProjectId         | ID of a project that will be used for synchronization                             | Yes      |
 | GherkinSyncToolId | ID for isolating usage of multiple GherkinSyncTools in one test management system | Yes      |
 
-## Usage
-
-The GherkinSyncTool scans the files in the specified folder for the * .feature files. It sends API calls to a test
-management system to create or update test cases. Received test ID will be populated into the feature files as tags for
-the following synchronization. Test management system for synchronization is selected by the presence of a particular
-test management system settings. To add a new test management system for synchronization, implement the ISynchronizer
-interface.
 ## Architecture
 
 ![Architecture](Docs/Architecture.png)
