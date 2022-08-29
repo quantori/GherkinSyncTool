@@ -9,6 +9,8 @@ using GherkinSyncTool.CommandLineOptions;
 using GherkinSyncTool.DI;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
+using GherkinSyncTool.Synchronizers.AllureTestOps;
+using GherkinSyncTool.Synchronizers.AllureTestOps.Model;
 using GherkinSyncTool.Synchronizers.AzureDevOps;
 using GherkinSyncTool.Synchronizers.AzureDevOps.Model;
 using GherkinSyncTool.Synchronizers.TestRail;
@@ -93,6 +95,9 @@ namespace GherkinSyncTool
                 case { AzureDevOps: true }:
                     ContainerBuilder.RegisterType<AzureDevopsSynchronizer>().As<ISynchronizer>().SingleInstance();
                     return;
+                case { AllureTestOps: true }:
+                    ContainerBuilder.RegisterType<AllureTestOpsSynchronizer>().As<ISynchronizer>().SingleInstance();
+                    return;
             }
             
             var configurationSections = ConfigurationManager.Config.GetChildren();
@@ -108,6 +113,11 @@ namespace GherkinSyncTool
                 if(section.Key.Contains(nameof(AzureDevopsSettings)))
                 {
                     ContainerBuilder.RegisterType<AzureDevopsSynchronizer>().As<ISynchronizer>().SingleInstance();
+                    break;
+                }
+                if(section.Key.Contains(nameof(AllureTestOpsSettings)))
+                {
+                    ContainerBuilder.RegisterType<AllureTestOpsSynchronizer>().As<ISynchronizer>().SingleInstance();
                     break;
                 }
             }

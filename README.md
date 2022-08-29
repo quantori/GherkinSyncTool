@@ -1,6 +1,6 @@
 # Quantori GherkinSyncTool
 
-Copyright (c) 2021 Quantori.
+Copyright (c) 2022 Quantori.
 
 Quantori GherkinSyncTool is an open-source console application that synchronizes tests scenarios
 in [Gherkin syntax](https://cucumber.io/docs/gherkin/) (also known as feature files) with a test management system.
@@ -17,6 +17,7 @@ the following synchronization. The test case id tag looks like this: `@tc:1234`.
 
 - TestRail
 - Azure DevOps
+- Allure TestOps
 - ... To add a new system implement the ISynchronizer interface.
 
 ## Installation
@@ -26,31 +27,32 @@ GherkinSyncTool has the next ways how to run:
 - Binary executable files for Linux, Windows, macOS are attached to the GitHub releases.
 
 - Nuget .NET tool https://www.nuget.org/packages/GherkinSyncTool/
-    
+
     ```
     dotnet tool install --global GherkinSyncTool
     ```
 
 - Installation from the source code
 
-  - Install [.NET](https://dotnet.microsoft.com/download).
-  - Clone the repository and open the terminal there.
-  - Build solution
+    - Install [.NET](https://dotnet.microsoft.com/download).
+    - Clone the repository and open the terminal there.
+    - Build solution
 
-    ```
-    dotnet build
-    ```
-    
-  - Run app
-    
-    ```
-    dotnet .\.\GherkinSyncTool\bin\Debug\net5.0\GherkinSyncTool.dll
-    ```
+      ```
+      dotnet build
+      ```
+
+    - Run app
+
+      ```
+      dotnet .\.\GherkinSyncTool\bin\Debug\net5.0\GherkinSyncTool.dll
+      ```
 
 ### TestRail
 
-TestRail's API should be enabled. In order for the tool to work correctly, the TestRail test template should have the custom fields that are presented in the table
-below. The template should not contain any required fields. An existing template can be used or a new one created.
+TestRail's API should be enabled. In order for the tool to work correctly, the TestRail test template should have the
+custom fields that are presented in the table below. The template should not contain any required fields. An existing
+template can be used or a new one created.
 
 | System Name          | Type     |
 |----------------------|----------|
@@ -61,9 +63,12 @@ below. The template should not contain any required fields. An existing template
 | `automation_type`    | Dropdown |
 
 ##### Tags
-- @Reference:JIRA-123 tag from a feature file will be parsed and filled as 'JIRA-123' to the reference testrail test case field.
+
+- @Reference:JIRA-123 tag from a feature file will be parsed and filled as 'JIRA-123' to the reference testrail test
+  case field.
 - @Priority:High tag from a feature file will be parsed and filled as 'High' to the priority testrail test case field.
-- @Automated:UI tag from a feature file will be parsed and filled as 'UI' to the automation type testrail test case field.
+- @Automated:UI tag from a feature file will be parsed and filled as 'UI' to the automation type testrail test case
+  field.
 
 ## Configuration
 
@@ -111,6 +116,15 @@ GherkinSyncTool can be configured in three ways. The priority corresponds to the
 | Area                    | Work item area path                                                               | No       |
 | GherkinSyncToolId       | ID for isolating usage of multiple GherkinSyncTools in one test management system | Yes      |
 | SetThenStepsAsExpected  | Set "Then step" as Azure DevOps expected result                                   | No       |
+
+### Allure TestOps settings
+
+| Parameter         | Description                                                                       | Required |
+|-------------------|-----------------------------------------------------------------------------------| :------: |
+| BaseUrl           | Azure DevOps URL address                                                          | Yes      |
+| AccessToken       | API access token                                                                  | Yes      |
+| ProjectId         | ID of a project that will be used for synchronization                             | Yes      |
+| GherkinSyncToolId | ID for isolating usage of multiple GherkinSyncTools in one test management system | Yes      |
 
 ## Architecture
 

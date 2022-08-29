@@ -1,6 +1,7 @@
 ﻿using Autofac;
 using GherkinSyncTool.FeatureParser;
 using GherkinSyncTool.Models;
+using GherkinSyncTool.Synchronizers.AllureTestOps;
 using GherkinSyncTool.Synchronizers.AzureDevOps;
 using GherkinSyncTool.Synchronizers.TestRail;
 
@@ -15,6 +16,7 @@ namespace GherkinSyncTool.DI
             builder.RegisterType<Context>().SingleInstance();
             builder.RegisterModule<TestRailSynchronizerModule>();
             builder.RegisterModule<AzureDevopsSynchronizerModule>();
+            builder.RegisterModule<AllureSynchronizerModule>();
         }
     }
 }

@@ -38,7 +38,7 @@ namespace GherkinSyncTool.Models.Utils
             return allTags;
         }
 
-        public static ulong GetTagIdUlong(Tag tagId)
+        public static ulong GetTagId(Tag tagId)
         {
             if (tagId is null) throw new ArgumentNullException(nameof(tagId));
             return ulong.Parse(Regex.Match(tagId.Name, @"\d+").Value);

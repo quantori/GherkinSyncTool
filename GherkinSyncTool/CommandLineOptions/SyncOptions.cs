@@ -10,5 +10,8 @@ namespace GherkinSyncTool.CommandLineOptions
 
         [Option("azuredevops", HelpText = "Synchronize with Azure DevOps")]
         public bool AzureDevOps { get; set; }
+        
+        [Option("alluretestops", HelpText = "Synchronize with Allure TestOps")]
+        public bool AllureTestOps { get; set; }
     }
 }
