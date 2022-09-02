@@ -2,12 +2,12 @@
 
 namespace Quantori.AllureTestOpsClient.Model
 {
-    public class GetTestCasesResponse
+    public class GetContentResponse<TContent>
     {
         public int TotalElements { get; set; }
         public int TotalPages { get; set; }
         public int Size { get; set; }
-        public List<Content> Content { get; set; }
+        public List<TContent> Content { get; set; }
         public int Number { get; set; }
         public Sort Sort { get; set; }
         public int NumberOfElements { get; set; }
