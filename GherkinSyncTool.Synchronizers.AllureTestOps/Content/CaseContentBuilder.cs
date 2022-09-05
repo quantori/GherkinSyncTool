@@ -23,10 +23,20 @@ public class CaseContentBuilder
     private readonly AllureClient _allureClient;
     private readonly Context _context;
     private List<WorkflowSchema> _workflowSchemas;
-    public List<WorkflowSchema> WorkflowSchemas => _workflowSchemas??= _allureClient.GetAllWorkflowSchemas(_allureTestOpsSettings.ProjectId).ToList();
+    private Item _automatedWorkflowId;
+    private Item _manualWorkflowId;
+
+    public List<WorkflowSchema> WorkflowSchemas =>
+        _workflowSchemas ??= _allureClient.GetAllWorkflowSchemas(_allureTestOpsSettings.ProjectId).ToList();
+
     private List<WorkflowContent> _workflows;
-    public List<WorkflowContent> Workflows => _workflows??= _allureClient.GetAllWorkflows().ToList();
-  
+    public List<WorkflowContent> Workflows => _workflows ??= _allureClient.GetAllWorkflows().ToList();
+
+    public Item AutomatedWorkflow =>
+        _automatedWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Automated))!.Workflow;
+
+    public Item ManualWorkflow => _manualWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Manual))!.Workflow;
+
     public CaseContentBuilder(AllureClient allureClient, Context context)
     {
         _allureClient = allureClient;
@@ -40,10 +50,16 @@ public class CaseContentBuilder
             Name = scenario.Name,
             ProjectId = _allureTestOpsSettings.ProjectId,
             Automated = IsAutomated(scenario, featureFile),
-            StatusId = AddStatus(scenario, featureFile)
+            StatusId = AddStatus(scenario, featureFile),
+            WorkflowId = AddWorkflow(scenario, featureFile)
         };
 
         return caseRequest;
+    }
+
+    private long AddWorkflow(Scenario scenario, IFeatureFile featureFile)
+    {
+        return IsAutomated(scenario, featureFile) ? AutomatedWorkflow.Id : ManualWorkflow.Id;
     }
 
     private long? AddStatus(Scenario scenario, IFeatureFile featureFile)
@@ -51,15 +67,23 @@ public class CaseContentBuilder
         var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
         var statusTag = allTags.LastOrDefault(tag => tag.Name.Contains(TagsConstants.Status, StringComparison.InvariantCultureIgnoreCase));
 
-        if (statusTag is null) return null;
+        var automated = IsAutomated(scenario, featureFile);
+
+        var manualStatuses = Workflows.FirstOrDefault(workflow => workflow.Id == ManualWorkflow.Id)!.Statuses;
+        var autoStatuses = Workflows.FirstOrDefault(workflow => workflow.Id == AutomatedWorkflow.Id)!.Statuses;
+
+        if (statusTag is null)
+        {
+            if (automated)
+            {
+                return autoStatuses.FirstOrDefault()!.Id;
+            }
+
+            return manualStatuses.FirstOrDefault()!.Id;
+        }
 
         var statusString = statusTag.Name.Replace(TagsConstants.Status, "", StringComparison.InvariantCultureIgnoreCase);
 
-        var manualWorkflow = WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Manual)).Workflow;
-        var autoWorkflow = WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Automated)).Workflow;
-
-        var manualStatuses = Workflows.FirstOrDefault(workflow => workflow.Id == manualWorkflow.Id).Statuses;
-        var autoStatuses = Workflows.FirstOrDefault(workflow => workflow.Id == autoWorkflow.Id).Statuses;
 
         if (IsAutomated(scenario, featureFile))
         {
@@ -70,7 +94,8 @@ public class CaseContentBuilder
             catch (InvalidOperationException e)
             {
                 var statusNames = string.Join(", ", autoStatuses.Select(status => status.Name));
-                Log.Error(e, $"'{statusString}' is incorrect option for scenario: '{scenario.Name}'. Valid options are: '{statusNames}'. Workflow: '{autoWorkflow.Name}'");
+                Log.Error(e,
+                    $"'{statusString}' is incorrect option for scenario: '{scenario.Name}'. Valid options are: '{statusNames}'. Workflow: '{AutomatedWorkflow.Name}'");
                 _context.IsRunSuccessful = false;
                 return null;
             }
@@ -84,7 +109,7 @@ public class CaseContentBuilder
         {
             var statusNames = string.Join(", ", manualStatuses.Select(status => status.Name));
             Log.Error(e,
-                $"'{statusString}' is incorrect option for scenario: '{scenario.Name}'. Valid options are: '{statusNames}'. Workflow: '{manualWorkflow.Name}'");
+                $"'{statusString}' is incorrect option for scenario: '{scenario.Name}'. Valid options are: '{statusNames}'. Workflow: '{ManualWorkflow.Name}'");
             _context.IsRunSuccessful = false;
             return null;
         }
