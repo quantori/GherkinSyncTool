@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using Gherkin.Ast;
 using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Models.Utils;
@@ -51,10 +53,27 @@ public class CaseContentBuilder
             ProjectId = _allureTestOpsSettings.ProjectId,
             Automated = IsAutomated(scenario, featureFile),
             StatusId = AddStatus(scenario, featureFile),
-            WorkflowId = AddWorkflow(scenario, featureFile)
+            WorkflowId = AddWorkflow(scenario, featureFile),
+            Description = AddDescription(scenario, featureFile)
         };
 
         return caseRequest;
+    }
+
+    private string AddDescription(Scenario scenario, IFeatureFile featureFile)
+    {
+        var description = new StringBuilder();
+        description.AppendLine(featureFile.Document.Feature.Description);
+        description.AppendLine(scenario.Description);
+
+        var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
+        if (background is not null && (!string.IsNullOrWhiteSpace(background.Name) || !string.IsNullOrWhiteSpace(background.Description)))
+        {
+            description.AppendLine($"{background.Keyword}: {background.Name}");
+            description.AppendLine(background.Description);
+        }
+        description.Append($"Feature file: {featureFile.RelativePath}");
+        return description.ToString();
     }
 
     private long AddWorkflow(Scenario scenario, IFeatureFile featureFile)
@@ -97,7 +116,7 @@ public class CaseContentBuilder
                 Log.Error(e,
                     $"'{statusString}' is incorrect option for scenario: '{scenario.Name}'. Valid options are: '{statusNames}'. Workflow: '{AutomatedWorkflow.Name}'");
                 _context.IsRunSuccessful = false;
-                return null;
+                return autoStatuses.FirstOrDefault()!.Id;
             }
         }
 
@@ -111,7 +130,7 @@ public class CaseContentBuilder
             Log.Error(e,
                 $"'{statusString}' is incorrect option for scenario: '{scenario.Name}'. Valid options are: '{statusNames}'. Workflow: '{ManualWorkflow.Name}'");
             _context.IsRunSuccessful = false;
-            return null;
+            return manualStatuses.FirstOrDefault()!.Id;
         }
     }
 
