@@ -14,7 +14,7 @@ using Refit;
 
 namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 {
-    public class AllureClient
+    public class AllureClientWrapper
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
         private readonly AllureTestOpsSettings _azureDevopsSettings =
@@ -22,19 +22,9 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
         private readonly IAllureClient _allureClient;
 
-        public AllureClient()
+        public AllureClientWrapper()
         {
-            _allureClient = RestService.For<IAllureClient>(_azureDevopsSettings.BaseUrl, new RefitSettings
-            {
-                AuthorizationHeaderValueGetter = () => Task.FromResult(_azureDevopsSettings.AccessToken),
-                ContentSerializer = new NewtonsoftJsonContentSerializer(
-                    new JsonSerializerSettings
-                    {
-                        ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                        NullValueHandling = NullValueHandling.Ignore
-                    }
-                )
-            });
+            _allureClient = AllureClient.Get(_azureDevopsSettings.BaseUrl, _azureDevopsSettings.AccessToken);
         }
 
         public IEnumerable<TestCaseContent> GetAllTestCases()

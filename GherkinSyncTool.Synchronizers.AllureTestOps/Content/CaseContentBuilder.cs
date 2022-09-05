@@ -20,26 +20,26 @@ public class CaseContentBuilder
 
     private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
 
-    private readonly AllureClient _allureClient;
+    private readonly AllureClientWrapper _allureClientWrapper;
     private readonly Context _context;
     private List<WorkflowSchema> _workflowSchemas;
     private Item _automatedWorkflowId;
     private Item _manualWorkflowId;
 
     public List<WorkflowSchema> WorkflowSchemas =>
-        _workflowSchemas ??= _allureClient.GetAllWorkflowSchemas(_allureTestOpsSettings.ProjectId).ToList();
+        _workflowSchemas ??= _allureClientWrapper.GetAllWorkflowSchemas(_allureTestOpsSettings.ProjectId).ToList();
 
     private List<WorkflowContent> _workflows;
-    public List<WorkflowContent> Workflows => _workflows ??= _allureClient.GetAllWorkflows().ToList();
+    public List<WorkflowContent> Workflows => _workflows ??= _allureClientWrapper.GetAllWorkflows().ToList();
 
     public Item AutomatedWorkflow =>
         _automatedWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Automated))!.Workflow;
 
     public Item ManualWorkflow => _manualWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Manual))!.Workflow;
 
-    public CaseContentBuilder(AllureClient allureClient, Context context)
+    public CaseContentBuilder(AllureClientWrapper allureClientWrapper, Context context)
     {
-        _allureClient = allureClient;
+        _allureClientWrapper = allureClientWrapper;
         _context = context;
     }
 
