@@ -62,14 +62,6 @@ template can be used or a new one created.
 | `gherkinsynctool_id` | String   |
 | `automation_type`    | Dropdown |
 
-##### Tags
-
-- @Reference:JIRA-123 tag from a feature file will be parsed and filled as 'JIRA-123' to the reference testrail test
-  case field.
-- @Priority:High tag from a feature file will be parsed and filled as 'High' to the priority testrail test case field.
-- @Automated:UI tag from a feature file will be parsed and filled as 'UI' to the automation type testrail test case
-  field.
-
 ## Configuration
 
 GherkinSyncTool can be configured in three ways. The priority corresponds to the list order.
@@ -106,6 +98,14 @@ GherkinSyncTool can be configured in three ways. The priority corresponds to the
 | ArchiveSection             | Deleted folders will be moved to this section                                                    | No       |
 | GherkinSyncToolId          | ID for isolating usage of multiple GherkinSyncTools in one test management system                | Yes      |
 
+#### TestRail Tags
+
+- `@Reference:JIRA-123` tag from a feature file will be parsed and filled as 'JIRA-123' to the reference testrail test
+  case field.
+- `@Priority:High` tag from a feature file will be parsed and filled as 'High' to the priority testrail test case field.
+- `@Automated:UI` tag from a feature file will be parsed and filled as 'UI' to the automation type testrail test case
+  field.
+
 ### Azure DevOps settings
 
 | Parameter               | Description                                                                       | Required |
@@ -125,6 +125,20 @@ GherkinSyncTool can be configured in three ways. The priority corresponds to the
 | AccessToken       | API access token                                                                  | Yes      |
 | ProjectId         | ID of a project that will be used for synchronization                             | Yes      |
 | GherkinSyncToolId | ID for isolating usage of multiple GherkinSyncTools in one test management system | Yes      |
+
+#### Allure Tags
+
+- `@Status:Draft` a test case status will be changed to "Draft".
+- `@Automated` a test case will be marked as automated.
+
+Example:
+```
+@Automated
+@Status:Draft
+@tc:235
+Scenario: Test case example
+  Given prepare sustem
+```
 
 ## Architecture
 

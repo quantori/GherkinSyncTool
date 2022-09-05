@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
-using GherkinSyncTool.Models;
 using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Exception;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Model;
@@ -15,48 +14,22 @@ using Refit;
 
 namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 {
-    public class AllureClient
+    public class AllureClientWrapper
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
-
         private readonly AllureTestOpsSettings _azureDevopsSettings =
             ConfigurationManager.GetConfiguration<AllureTestOpsConfigs>().AllureTestOpsSettings;
 
-        private readonly Context _context;
         private readonly IAllureClient _allureClient;
 
-        public AllureClient(Context context)
+        public AllureClientWrapper()
         {
-            _context = context;
-            _allureClient = RestService.For<IAllureClient>(_azureDevopsSettings.BaseUrl, new RefitSettings
-            {
-                AuthorizationHeaderValueGetter = () => Task.FromResult(_azureDevopsSettings.AccessToken),
-                ContentSerializer = new NewtonsoftJsonContentSerializer(
-                    new JsonSerializerSettings
-                    {
-                        ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                        NullValueHandling = NullValueHandling.Ignore
-                    }
-                )
-                
-            });
+            _allureClient = AllureClient.Get(_azureDevopsSettings.BaseUrl, _azureDevopsSettings.AccessToken);
         }
 
-        public IEnumerable<Quantori.AllureTestOpsClient.Model.Content> GetAllTestCases()
+        public IEnumerable<TestCaseContent> GetAllTestCases()
         {
-            var allContent = new List<Quantori.AllureTestOpsClient.Model.Content>();
-            var isLastElementOnThePage = false;
-            var page = 0;
-            while (!isLastElementOnThePage)
-            {
-                var response = _allureClient.GetTestCasesAsync(_azureDevopsSettings.ProjectId, page).Result;
-                ValidateResponse(response);
-                page++;
-                isLastElementOnThePage = response.Content!.Last;
-                allContent.AddRange(response.Content!.Content);
-            }
-
-            return allContent;
+            return GetAllContent(i => _allureClient.GetTestCasesAsync(_azureDevopsSettings.ProjectId, i).Result);
         }
 
         private void ValidateResponse(IApiResponse response)
@@ -82,7 +55,6 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             return response.Content;
         }
 
-
         public TestCaseOverview GetTestCaseOverview(ulong id)
         {
             var response = _allureClient.GetTestCaseOverviewAsync(id).Result;
@@ -90,15 +62,14 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             return response.Content;
         }
 
-        public void UpdateTestCase(Quantori.AllureTestOpsClient.Model.Content currentCase, TestCaseRequest caseToUpdate)
+        public void UpdateTestCase(TestCaseContent currentCase, TestCaseRequest caseToUpdate)
         {
             if (!IsTestCaseContentEqual(currentCase, caseToUpdate))
             {
-                
                 var response = _allureClient.UpdateTestCaseAsync(currentCase.Id, caseToUpdate).Result;
- 
+
                 ValidateResponse(response);
-            
+
                 Log.Info($"Updated: [{currentCase.Id}] {caseToUpdate.Name}");
             }
             else
@@ -106,12 +77,46 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
                 Log.Info($"Up-to-date: [{currentCase.Id}] {currentCase.Name}");
             }
         }
-        
-        private static bool IsTestCaseContentEqual(Quantori.AllureTestOpsClient.Model.Content currentCase, TestCaseRequest caseToUpdate)
+
+        public IEnumerable<Status> GetAllStatuses()
+        {
+            return GetAllContent(i => _allureClient.GetStatusAsync(null,i).Result);
+        }
+
+        public IEnumerable<WorkflowSchema> GetAllWorkflowSchemas(int projectId)
+        {
+            return GetAllContent(i => _allureClient.GetWorkflowSchemaAsync(projectId,i).Result);
+        }
+
+        public IEnumerable<WorkflowContent> GetAllWorkflows()
+        {
+            return GetAllContent(i => _allureClient.GetWorkflowAsync(i).Result);;
+        }
+
+        private static bool IsTestCaseContentEqual(TestCaseContent currentCase, TestCaseRequest caseToUpdate)
         {
             if (!currentCase.Name.Equals(caseToUpdate.Name)) return false;
             if (!currentCase.Automated.Equals(caseToUpdate.Automated)) return false;
+            if (!currentCase.Status.Id.Equals(caseToUpdate.StatusId)) return false;
             return true;
+        }
+
+        private IEnumerable<T> GetAllContent<T>(Func<int, IApiResponse<GetContentResponse<T>>> function)
+        {
+            var allContent = new List<T>();
+            var isLastElementOnThePage = false;
+            var page = 0;
+            while (!isLastElementOnThePage)
+            {
+                var response = function(page);
+                
+                ValidateResponse(response);
+                page++;
+                isLastElementOnThePage = response.Content!.Last;
+                allContent.AddRange(response.Content!.Content);
+            }
+
+            return allContent;
         }
     }
 }

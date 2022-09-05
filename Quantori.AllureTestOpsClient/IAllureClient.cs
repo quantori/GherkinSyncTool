@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Quantori.AllureTestOpsClient.Model;
 using Refit;
 
@@ -16,7 +17,7 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="sort">Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.</param>
         /// <returns></returns>
         [Get("/api/rs/testcase")]
-        Task<IApiResponse<GetTestCasesResponse>> GetTestCasesAsync(int projectId, int page = 0, int size = 100, string sort = null);
+        Task<IApiResponse<GetContentResponse<TestCaseContent>>> GetTestCasesAsync(int projectId, int page = 0, int size = 100, string sort = null);
 
         /// <summary>
         /// Create a new test case
@@ -42,5 +43,33 @@ namespace Quantori.AllureTestOpsClient
         /// <returns></returns>
         [Patch("/api/rs/testcase/{Id}")]
         Task<IApiResponse<TestCase>> UpdateTestCaseAsync([AliasAs("id")] ulong testCaseId, [Body] TestCaseRequest updateTestCaseRequest);
+
+        /// <summary>
+        /// Find all statuses
+        /// </summary>
+        /// <returns></returns>
+        [Get("/api/rs/status")]
+        Task<IApiResponse<GetContentResponse<Status>>> GetStatusAsync(int? workflowId = null, int page = 0, int size = 100, string sort = null);
+
+        /// <summary>
+        /// Find all workflow schemas for given project
+        /// </summary>
+        /// <param name="projectId"></param>
+        /// <param name="page"></param>
+        /// <param name="size"></param>
+        /// <param name="sort"></param>
+        [Get("/api/rs/workflowschema")]
+        Task<IApiResponse<GetContentResponse<WorkflowSchema>>> GetWorkflowSchemaAsync(int projectId, int page = 0, int size = 100, string sort = null);
+        
+        /// <summary>
+        /// Find all workflow
+        /// </summary>
+        /// <param name="projectId"></param>
+        /// <param name="page"></param>
+        /// <param name="size"></param>
+        /// <param name="sort"></param>
+        /// <returns></returns>
+        [Get("/api/rs/workflow")]
+        Task<IApiResponse<GetContentResponse<WorkflowContent>>> GetWorkflowAsync(int page = 0, int size = 100, string sort = null);
     }
 }

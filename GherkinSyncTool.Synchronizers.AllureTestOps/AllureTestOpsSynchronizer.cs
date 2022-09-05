@@ -18,13 +18,13 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
         private readonly GherkinSyncToolConfig _gherkinSyncToolConfig = ConfigurationManager.GetConfiguration<GherkinSyncToolConfig>();
-        private readonly AllureClient _allureClient;
+        private readonly AllureClientWrapper _allureClientWrapper;
         private readonly Context _context;
         private readonly CaseContentBuilder _caseContentBuilder;
 
-        public AllureTestOpsSynchronizer(AllureClient allureClient, Context context, CaseContentBuilder caseContentBuilder)
+        public AllureTestOpsSynchronizer(AllureClientWrapper allureClientWrapper, Context context, CaseContentBuilder caseContentBuilder)
         {
-            _allureClient = allureClient;
+            _allureClientWrapper = allureClientWrapper;
             _context = context;
             _caseContentBuilder = caseContentBuilder;
         }
@@ -34,7 +34,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
             var stopwatch = Stopwatch.StartNew();
             Log.Info("# Start synchronization with Allure TestOps");
 
-            var allureTestCases = _allureClient.GetAllTestCases().ToList();
+            var allureTestCases = _allureClientWrapper.GetAllTestCases().ToList();
 
             foreach (var featureFile in featureFiles)
             {
@@ -79,7 +79,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                         {
                             try
                             {
-                                _allureClient.UpdateTestCase(allureTestCase, caseRequest);    
+                                _allureClientWrapper.UpdateTestCase(allureTestCase, caseRequest);    
                             }
                             catch (AllureException e)
                             {
@@ -99,7 +99,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
             TestCase result = null;
             try
             {
-                result = _allureClient.AddTestCase(caseRequest);
+                result = _allureClientWrapper.AddTestCase(caseRequest);
                 return result;
             }
             catch (AllureException e)

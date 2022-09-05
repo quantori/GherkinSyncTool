@@ -1,8 +1,8 @@
-﻿namespace Quantori.AllureTestOpsClient.Model
+namespace Quantori.AllureTestOpsClient.Model
 {
-    public class TestLayer
+    public class Item
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Name { get; set; }
         public ulong CreatedDate { get; set; }
         public ulong LastModifiedDate { get; set; }

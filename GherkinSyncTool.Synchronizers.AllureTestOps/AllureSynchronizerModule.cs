@@ -8,7 +8,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
     {
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterType<AllureClient>().SingleInstance();
+            builder.RegisterType<AllureClientWrapper>().SingleInstance();
             builder.RegisterType<CaseContentBuilder>().SingleInstance();
         }
     }
