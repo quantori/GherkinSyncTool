@@ -12,6 +12,7 @@ using GherkinSyncTool.Synchronizers.AllureTestOps.Model;
 using NLog;
 using Quantori.AllureTestOpsClient.Model;
 using Scenario = Gherkin.Ast.Scenario;
+using Step = Quantori.AllureTestOpsClient.Model.Step;
 
 namespace GherkinSyncTool.Synchronizers.AllureTestOps.Content;
 
@@ -54,10 +55,113 @@ public class CaseContentBuilder
             Automated = IsAutomated(scenario, featureFile),
             StatusId = AddStatus(scenario, featureFile),
             WorkflowId = AddWorkflow(scenario, featureFile),
-            Description = AddDescription(scenario, featureFile)
+            Description = AddDescription(scenario, featureFile),
+            Scenario = AddScenario(scenario, featureFile)
         };
 
         return caseRequest;
+    }
+
+    private Quantori.AllureTestOpsClient.Model.Scenario AddScenario(Scenario scenario, IFeatureFile featureFile)
+    {
+        var steps = GetSteps(scenario, featureFile);
+        if (!steps.Any()) return null;
+
+        var allureScenario = new Quantori.AllureTestOpsClient.Model.Scenario
+        {
+            Steps = new List<Step>()
+        };
+        allureScenario.Steps.AddRange(steps);
+        return allureScenario;
+    }
+
+    private List<Step> GetSteps(Scenario scenario, IFeatureFile featureFile)
+    {
+        var scenarioSteps = ExtractSteps(scenario.Steps.ToList());
+
+        var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
+        if (background is not null)
+        {
+            var backgroundSteps = ExtractSteps(background.Steps.ToList());
+            return backgroundSteps.Concat(scenarioSteps).ToList();
+        }
+
+        return scenarioSteps;
+    }
+    
+    private List<Step> ExtractSteps(List<Gherkin.Ast.Step> steps)
+    {
+        var allureSteps = new List<Step>();
+        foreach (var step in steps)
+        {
+            var allureStep = new Step
+            {
+                Keyword = step.Keyword.Trim(),
+                Name = step.Text
+            };
+
+            //TODO: add attachments
+            switch (step.Argument)
+            {
+                case DocString docString:
+                    
+                    //TODO: add a
+                    allureStep.Attachments = new List<Attachment> {
+                        new()
+                        {
+                            Name = "Text",
+                            ContentType = "text/plain"
+                        }
+                    };
+
+                    break;
+                case DataTable table:
+                    allureStep.Attachments = new List<Attachment>
+                    {
+                        new()
+                        {
+                            Name = "Table",
+                            ContentType = "text/csv"
+                        }
+                    };
+                    break;
+            }
+
+            allureSteps.Add(allureStep);
+        }
+
+        return allureSteps;
+    }
+
+    //TODO:
+    private string ConvertToStringTable(List<TableRow> tableRows)
+    {
+        var table = new StringBuilder();
+        table.Append("||");
+
+        //Header
+        foreach (var cell in tableRows.First().Cells)
+        {
+            table.Append($"|:{cell.Value}");
+        }
+
+        table.AppendLine();
+
+        //Table body
+        for (int i = 1; i < tableRows.Count; i++)
+        {
+            table.Append("|");
+
+            var row = tableRows[i];
+            foreach (var cell in row.Cells)
+            {
+                table.Append($"|{cell.Value}");
+            }
+
+            table.AppendLine();
+        }
+
+        return table.ToString();
     }
 
     private string AddDescription(Scenario scenario, IFeatureFile featureFile)

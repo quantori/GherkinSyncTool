@@ -50,8 +50,8 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                     if (tagId is null)
                     {
                         var newTestCase = CreateTestCase(caseRequest);
-                        if(newTestCase is null) continue;
-                        
+                        if (newTestCase is null) continue;
+
                         var lineNumberToInsert = scenario.Location.Line - 1 + insertedTagIdsCount;
                         var formattedTagId = GherkinHelper.FormatTagId(newTestCase.Id.ToString());
                         TextFilesEditMethods.InsertLineToTheFile(featureFile.AbsolutePath, lineNumberToInsert,
@@ -69,8 +69,8 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                         {
                             Log.Warn($"Case with id {caseIdFromFile} not found. Recreating missing case");
                             var newTestCase = CreateTestCase(caseRequest);
-                            if(newTestCase is null) continue;
-                            
+                            if (newTestCase is null) continue;
+
                             var formattedTagId = GherkinHelper.FormatTagId(newTestCase.Id.ToString());
                             TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath,
                                 tagId.Location.Line - 1 + insertedTagIdsCount, formattedTagId);
@@ -79,7 +79,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                         {
                             try
                             {
-                                _allureClientWrapper.UpdateTestCase(allureTestCase, caseRequest);    
+                                _allureClientWrapper.UpdateTestCase(allureTestCase, caseRequest);
                             }
                             catch (AllureException e)
                             {

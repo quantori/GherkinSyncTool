@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading.Tasks;
 using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Exception;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Model;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using NLog;
 using Quantori.AllureTestOpsClient;
 using Quantori.AllureTestOpsClient.Model;
