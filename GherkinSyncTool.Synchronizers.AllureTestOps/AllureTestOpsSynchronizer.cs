@@ -36,6 +36,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
             Log.Info("# Start synchronization with Allure TestOps");
 
             var allureTestCases = _allureClientWrapper.GetAllTestCases().ToList();
+            var featureFilesTagIds = new List<ulong>(); 
 
             foreach (var featureFile in featureFiles)
             {
@@ -64,7 +65,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                     if (tagId is not null)
                     {
                         var caseIdFromFile = GherkinHelper.GetTagId(tagId);
-                        //featureFilesTagIds.Add(caseId);
+                        featureFilesTagIds.Add(caseIdFromFile);
                         var allureTestCase = allureTestCases.FirstOrDefault(c => c.Id == caseIdFromFile);
                         if (allureTestCase is null)
                         {
@@ -91,8 +92,14 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                     }
                 }
             }
-
+            //TODO:
+            DeleteNotExistingScenarios(allureTestCases, featureFilesTagIds);
             Log.Debug(@$"Synchronization with Allure TestOps finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
+        }
+
+        private void DeleteNotExistingScenarios(List<TestCaseContent> allureTestCases, List<ulong> featureFilesTagIds)
+        {
+            throw new System.NotImplementedException();
         }
 
         private TestCase CreateNewTestCase(CreateTestCaseRequestExtended caseRequestExtended)
