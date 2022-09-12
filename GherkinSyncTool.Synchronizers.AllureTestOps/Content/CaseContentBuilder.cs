@@ -11,8 +11,9 @@ using GherkinSyncTool.Synchronizers.AllureTestOps.Client;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Model;
 using NLog;
 using Quantori.AllureTestOpsClient.Model;
+using Refit;
 using Scenario = Gherkin.Ast.Scenario;
-using Step = Quantori.AllureTestOpsClient.Model.Step;
+using Step = Gherkin.Ast.Step;
 
 namespace GherkinSyncTool.Synchronizers.AllureTestOps.Content;
 
@@ -46,20 +47,65 @@ public class CaseContentBuilder
         _context = context;
     }
 
-    public CreateTestCaseRequest BuildCaseRequest(Scenario scenario, IFeatureFile featureFile)
+    public CreateTestCaseRequestExtended BuildCaseRequest(Scenario scenario, IFeatureFile featureFile)
     {
-        var caseRequest = new CreateTestCaseRequest
+        var createTestCaseRequestExtended = new CreateTestCaseRequestExtended
         {
-            Name = scenario.Name,
-            ProjectId = _allureTestOpsSettings.ProjectId,
-            Automated = IsAutomated(scenario, featureFile),
-            StatusId = AddStatus(scenario, featureFile),
-            WorkflowId = AddWorkflow(scenario, featureFile),
-            Description = AddDescription(scenario, featureFile),
-            Scenario = AddScenario(scenario, featureFile)
+            CreateTestCaseRequest =
+            {
+                Name = scenario.Name,
+                ProjectId = _allureTestOpsSettings.ProjectId,
+                Automated = IsAutomated(scenario, featureFile),
+                StatusId = AddStatus(scenario, featureFile),
+                WorkflowId = AddWorkflow(scenario, featureFile),
+                Description = AddDescription(scenario, featureFile),
+                Scenario = AddScenario(scenario, featureFile)
+            },
+            StepsAttachments = AddStepAttachments(scenario, featureFile)
         };
 
-        return caseRequest;
+        return createTestCaseRequestExtended;
+    }
+
+    private Dictionary<int, ByteArrayPart> AddStepAttachments(Scenario scenario, IFeatureFile featureFile)
+    {
+        var extractAttachments = ExtractAttachments(scenario.Steps.ToList());
+
+        var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
+        if (background is not null)
+        {
+            var backgroundAttachments = ExtractAttachments(background.Steps.ToList());
+            return backgroundAttachments.Concat(extractAttachments).ToDictionary(pair => pair.Key, pair => pair.Value);
+        }
+
+        return extractAttachments;
+    }
+
+    private Dictionary<int, ByteArrayPart> ExtractAttachments(List<Step> steps)
+    {
+        var result = new Dictionary<int, ByteArrayPart>();
+
+        for (var index = 0; index < steps.Count; index++)
+        {
+            var step = steps[index];
+
+            switch (step.Argument)
+            {
+                case DocString docString:
+                    
+                    var textBytes = Encoding.ASCII.GetBytes(docString.Content);
+                    result.Add(index, new ByteArrayPart(textBytes, "Text", "text/plain"));
+                    break;
+                
+                case DataTable table:
+                    
+                    var csvBytes = Encoding.ASCII.GetBytes(ConvertToCsvTable(table.Rows.ToList()));
+                    result.Add(index, new ByteArrayPart(csvBytes, "Table", "text/csv"));
+                    break;
+            }
+        }
+
+        return result;
     }
 
     private Quantori.AllureTestOpsClient.Model.Scenario AddScenario(Scenario scenario, IFeatureFile featureFile)
@@ -69,13 +115,13 @@ public class CaseContentBuilder
 
         var allureScenario = new Quantori.AllureTestOpsClient.Model.Scenario
         {
-            Steps = new List<Step>()
+            Steps = new List<Quantori.AllureTestOpsClient.Model.Step>()
         };
         allureScenario.Steps.AddRange(steps);
         return allureScenario;
     }
 
-    private List<Step> GetSteps(Scenario scenario, IFeatureFile featureFile)
+    private List<Quantori.AllureTestOpsClient.Model.Step> GetSteps(Scenario scenario, IFeatureFile featureFile)
     {
         var scenarioSteps = ExtractSteps(scenario.Steps.ToList());
 
@@ -88,44 +134,17 @@ public class CaseContentBuilder
 
         return scenarioSteps;
     }
-    
-    private List<Step> ExtractSteps(List<Gherkin.Ast.Step> steps)
+
+    private List<Quantori.AllureTestOpsClient.Model.Step> ExtractSteps(List<Step> steps)
     {
-        var allureSteps = new List<Step>();
+        var allureSteps = new List<Quantori.AllureTestOpsClient.Model.Step>();
         foreach (var step in steps)
         {
-            var allureStep = new Step
+            var allureStep = new Quantori.AllureTestOpsClient.Model.Step
             {
                 Keyword = step.Keyword.Trim(),
                 Name = step.Text
             };
-
-            //TODO: add attachments
-            switch (step.Argument)
-            {
-                case DocString docString:
-                    
-                    //TODO: add a
-                    allureStep.Attachments = new List<Attachment> {
-                        new()
-                        {
-                            Name = "Text",
-                            ContentType = "text/plain"
-                        }
-                    };
-
-                    break;
-                case DataTable table:
-                    allureStep.Attachments = new List<Attachment>
-                    {
-                        new()
-                        {
-                            Name = "Table",
-                            ContentType = "text/csv"
-                        }
-                    };
-                    break;
-            }
 
             allureSteps.Add(allureStep);
         }
@@ -133,32 +152,17 @@ public class CaseContentBuilder
         return allureSteps;
     }
 
-    //TODO:
-    private string ConvertToStringTable(List<TableRow> tableRows)
+    private string ConvertToCsvTable(List<TableRow> tableRows)
     {
         var table = new StringBuilder();
-        table.Append("||");
 
         //Header
-        foreach (var cell in tableRows.First().Cells)
-        {
-            table.Append($"|:{cell.Value}");
-        }
-
-        table.AppendLine();
+        table.AppendLine(string.Join(",", tableRows.First().Cells.Select(cell => cell.Value)));
 
         //Table body
-        for (int i = 1; i < tableRows.Count; i++)
+        for (var i = 1; i < tableRows.Count; i++)
         {
-            table.Append("|");
-
-            var row = tableRows[i];
-            foreach (var cell in row.Cells)
-            {
-                table.Append($"|{cell.Value}");
-            }
-
-            table.AppendLine();
+            table.AppendLine(string.Join(",", tableRows[i].Cells.Select(cell => cell.Value)));
         }
 
         return table.ToString();
@@ -176,6 +180,7 @@ public class CaseContentBuilder
             description.AppendLine($"{background.Keyword}: {background.Name}");
             description.AppendLine(background.Description);
         }
+
         description.Append($"Feature file: {featureFile.RelativePath}");
         return description.ToString();
     }

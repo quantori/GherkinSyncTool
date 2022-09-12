@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Quantori.AllureTestOpsClient.Model;
 using Refit;
@@ -71,5 +72,26 @@ namespace Quantori.AllureTestOpsClient
         /// <returns></returns>
         [Get("/api/rs/workflow")]
         Task<IApiResponse<GetContentResponse<WorkflowContent>>> GetWorkflowAsync(int page = 0, int size = 100, string sort = null);
+        
+        #region Test case attachment
+
+        /// <summary>
+        /// Upload new test case attachments
+        /// </summary>
+        [Multipart]
+        [Post("/api/rs/testcase/attachment")]
+        Task<IApiResponse<List<Attachment>>> UploadTestCaseAttachment(long testCaseId, [AliasAs("file")] IEnumerable<ByteArrayPart> attachments);
+        
+        #endregion
+        
+        #region Test case scenario controller
+        
+        /// <summary>
+        /// Update scenario for test case
+        /// </summary>
+        [Post("/api/rs/testcase/{Id}/scenario")]
+        Task<IApiResponse<Scenario>> UpdateTestCaseScenario([AliasAs("id")] long testCaseId, [Body] Scenario scenario);
+        #endregion
+        
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Exception;
@@ -59,15 +60,15 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             return response.Content;
         }
 
-        public void UpdateTestCase(TestCaseContent currentCase, TestCaseRequest caseToUpdate)
+        public void UpdateTestCase(TestCaseContent currentCase, CreateTestCaseRequestExtended caseToUpdate)
         {
-            if (!IsTestCaseContentEqual(currentCase, caseToUpdate))
+            if (!IsTestCaseContentEqual(currentCase, caseToUpdate.CreateTestCaseRequest))
             {
-                var response = _allureClient.UpdateTestCaseAsync(currentCase.Id, caseToUpdate).Result;
+                var response = _allureClient.UpdateTestCaseAsync(currentCase.Id, caseToUpdate.CreateTestCaseRequest).Result;
 
                 ValidateResponse(response);
 
-                Log.Info($"Updated: [{currentCase.Id}] {caseToUpdate.Name}");
+                Log.Info($"Updated: [{currentCase.Id}] {caseToUpdate.CreateTestCaseRequest.Name}");
             }
             else
             {
@@ -88,6 +89,13 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         public IEnumerable<WorkflowContent> GetAllWorkflows()
         {
             return GetAllContent(i => _allureClient.GetWorkflowAsync(i).Result);;
+        }
+
+        public List<Attachment> UploadTestCaseAttachments(long testCaseId,  IEnumerable<ByteArrayPart> content)
+        {
+            var response = _allureClient.UploadTestCaseAttachment(testCaseId, content).Result;
+            ValidateResponse(response);
+            return response.Content;
         }
 
         private static bool IsTestCaseContentEqual(TestCaseContent currentCase, TestCaseRequest caseToUpdate)
@@ -114,6 +122,21 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             }
 
             return allContent;
+        }
+
+        public void AddStepAttachments(CreateTestCaseRequestExtended caseRequestExtended, TestCase caseToUpdate)
+        {
+            var attachments = UploadTestCaseAttachments(caseToUpdate.Id, caseRequestExtended.StepsAttachments.Select(pair => pair.Value));
+            var stepNumbers =  caseRequestExtended.StepsAttachments.Keys.ToList();
+            for (var i = 0; i < stepNumbers.Count; i++)
+            {
+                var stepNumber = stepNumbers[i];
+                caseRequestExtended.CreateTestCaseRequest.Scenario.Steps[stepNumber].Attachments = new List<Attachment> { attachments[i] };
+            }
+
+            var response = _allureClient.UpdateTestCaseScenario(caseToUpdate.Id, caseRequestExtended.CreateTestCaseRequest.Scenario).Result;
+
+            ValidateResponse(response);
         }
     }
 }
