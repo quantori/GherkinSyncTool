@@ -46,12 +46,12 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                 {
                     var tagId = scenario.Tags.FirstOrDefault(tag => tag.Name.Contains(_gherkinSyncToolConfig.TagIdPrefix));
 
-                    var caseRequest = _caseContentBuilder.BuildCaseRequest(scenario, featureFile);
+                    var caseRequestExtended = _caseContentBuilder.BuildCaseRequest(scenario, featureFile);
 
                     // Create test case for feature file which is getting synced for the first time, so no tag id present.  
                     if (tagId is null)
                     {
-                        var newTestCase = CreateNewTestCase(caseRequest);
+                        var newTestCase = CreateNewTestCase(caseRequestExtended);
                         if (newTestCase is null) continue;
 
                         var lineNumberToInsert = scenario.Location.Line - 1 + insertedTagIdsCount;
@@ -66,11 +66,12 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                     {
                         var caseIdFromFile = GherkinHelper.GetTagId(tagId);
                         featureFilesTagIds.Add(caseIdFromFile);
+                        
                         var allureTestCase = allureTestCases.FirstOrDefault(c => c.Id == caseIdFromFile);
                         if (allureTestCase is null)
                         {
                             Log.Warn($"Case with id {caseIdFromFile} not found. Recreating missing case");
-                            var newTestCase = CreateNewTestCase(caseRequest);
+                            var newTestCase = CreateNewTestCase(caseRequestExtended);
                             if (newTestCase is null) continue;
 
                             var formattedTagId = GherkinHelper.FormatTagId(newTestCase.Id.ToString());
@@ -81,11 +82,11 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                         {
                             try
                             {
-                                _allureClientWrapper.UpdateTestCase(allureTestCase, caseRequest);
+                                _allureClientWrapper.UpdateTestCase(allureTestCase, caseRequestExtended);
                             }
                             catch (AllureException e)
                             {
-                                Log.Error(e, $"The test case has not been updated: {caseRequest.CreateTestCaseRequest.Name}");
+                                Log.Error(e, $"The test case has not been updated: {caseRequestExtended.CreateTestCaseRequest.Name}");
                                 _context.IsRunSuccessful = false;
                             }
                         }

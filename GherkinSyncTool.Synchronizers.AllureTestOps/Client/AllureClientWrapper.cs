@@ -62,7 +62,9 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
         public void UpdateTestCase(TestCaseContent currentCase, CreateTestCaseRequestExtended caseToUpdate)
         {
-            if (!IsTestCaseContentEqual(currentCase, caseToUpdate.CreateTestCaseRequest))
+            var testCaseOverview = _allureClient.GetTestCaseOverviewAsync(currentCase.Id).Result.Content;
+            
+            if (!IsTestCaseContentEqual(testCaseOverview, caseToUpdate))
             {
                 var response = _allureClient.UpdateTestCaseAsync(currentCase.Id, caseToUpdate.CreateTestCaseRequest).Result;
 
@@ -98,11 +100,11 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             return response.Content;
         }
 
-        private static bool IsTestCaseContentEqual(TestCaseContent currentCase, TestCaseRequest caseToUpdate)
+        private static bool IsTestCaseContentEqual(TestCaseOverview currentCase, CreateTestCaseRequestExtended caseToUpdate)
         {
-            if (!currentCase.Name.Equals(caseToUpdate.Name)) return false;
-            if (!currentCase.Automated.Equals(caseToUpdate.Automated)) return false;
-            if (!currentCase.Status.Id.Equals(caseToUpdate.StatusId)) return false;
+            if (!currentCase.Name.Equals(caseToUpdate.CreateTestCaseRequest.Name)) return false;
+            if (!currentCase.Automated.Equals(caseToUpdate.CreateTestCaseRequest.Automated)) return false;
+            if (!currentCase.Status.Id.Equals(caseToUpdate.CreateTestCaseRequest.StatusId)) return false;
             return true;
         }
 
