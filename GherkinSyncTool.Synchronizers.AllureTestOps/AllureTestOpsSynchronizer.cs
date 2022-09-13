@@ -100,7 +100,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
 
         private void DeleteNotExistingScenarios(List<TestCaseContent> allureTestCases, List<ulong> featureFilesTagIds)
         {
-            throw new System.NotImplementedException();
+            //TODO:
         }
 
         private TestCase CreateNewTestCase(CreateTestCaseRequestExtended caseRequestExtended)
