@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using GherkinSyncTool.Models.Configuration;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Exception;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Model;
@@ -65,26 +66,33 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         {
             var testCaseOverview = _allureClient.GetTestCaseOverviewAsync(currentCase.Id).Result.Content;
             var contentEqual = IsTestCaseContentEqual(testCaseOverview, caseToUpdate);
-            var scenarioEqual = IsScenarioEqual(testCaseOverview, caseToUpdate);
-            if (!contentEqual || !scenarioEqual)
-            {
-                var response = _allureClient.UpdateTestCaseAsync(currentCase.Id, caseToUpdate.CreateTestCaseRequest).Result;
-
-                ValidateResponse(response);
-
-                Log.Info($"Updated: [{currentCase.Id}] {caseToUpdate.CreateTestCaseRequest.Name}");
-                return;
-            }
+            bool updated = false;
+            
+            bool scenarioIsEqual;
             //Remove scenario
             if (testCaseOverview!.Scenario is not null && caseToUpdate.CreateTestCaseRequest.Scenario is null)
             {
                 var response = _allureClient.DeleteTestCaseScenario(testCaseOverview.Id).Result;
                 ValidateResponse(response);
-                Log.Info($"Updated: [{testCaseOverview.Id}] {caseToUpdate.CreateTestCaseRequest.Name}");
-                return;
+
+                scenarioIsEqual = true;
+                updated = true;
             }
-            
-            Log.Info($"Up-to-date: [{currentCase.Id}] {currentCase.Name}");
+            else
+            {
+                scenarioIsEqual = IsScenarioEqual(testCaseOverview, caseToUpdate);
+            }
+
+            if (!contentEqual || !scenarioIsEqual)
+            {
+                var response = _allureClient.UpdateTestCaseAsync(currentCase.Id, caseToUpdate.CreateTestCaseRequest).Result;
+                ValidateResponse(response);
+                updated = true;
+            }
+
+            Log.Info(updated
+                ? $"Updated: [{currentCase.Id}] {caseToUpdate.CreateTestCaseRequest.Name}"
+                : $"Up-to-date: [{currentCase.Id}] {currentCase.Name}");
         }
 
         private bool IsScenarioEqual(TestCaseOverview testCaseOverview, CreateTestCaseRequestExtended caseToUpdate)
@@ -93,7 +101,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             {
                 return true;
             }
-            
+
             if (testCaseOverview.Scenario is null && caseToUpdate.CreateTestCaseRequest.Scenario.Steps is not null)
             {
                 if (caseToUpdate.StepsAttachments.Any())
@@ -132,7 +140,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
                 if (stepsFromAllure[i].Attachments.Any() && caseToUpdate.StepsAttachments.ContainsKey(i))
                 {
-                    if (stepsFromAllure[i].Attachments.FirstOrDefault()!.ContentLength != System.Text.Encoding.Default.GetString(caseToUpdate.StepsAttachments[i].Value).Length)
+                    if (stepsFromAllure[i].Attachments.FirstOrDefault()?.ContentLength != Encoding.Default.GetString(caseToUpdate.StepsAttachments[i].Value).Length)
                     {
                         UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
                         return false;
@@ -195,12 +203,15 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
         private void UpdateTestCaseStepAttachments(CreateTestCaseRequestExtended caseToUpdate, TestCaseOverview testCaseOverview)
         {
-            var attachment = testCaseOverview.Scenario.Steps.Where(step => step.Attachments.FirstOrDefault() is not null);
-            foreach (var id in attachment.Select(step => step.Attachments.FirstOrDefault()!.Id))
+            if (testCaseOverview.Scenario is not null)
             {
-                RemoveTestCaseAttachment(id);
+                var attachment = testCaseOverview.Scenario.Steps.Where(step => step.Attachments.FirstOrDefault() is not null);
+                foreach (var id in attachment.Select(step => step.Attachments.FirstOrDefault()!.Id))
+                {
+                    RemoveTestCaseAttachment(id);
+                }    
             }
-
+            
             AddTestCaseStepAttachments(caseToUpdate, testCaseOverview.Id);
         }
 
