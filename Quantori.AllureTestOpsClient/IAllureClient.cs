@@ -80,13 +80,19 @@ namespace Quantori.AllureTestOpsClient
         /// </summary>
         [Multipart]
         [Post("/api/rs/testcase/attachment")]
-        Task<IApiResponse<List<Attachment>>> UploadTestCaseAttachment(long testCaseId, [AliasAs("file")] IEnumerable<ByteArrayPart> attachments);
+        Task<IApiResponse<List<Attachment>>> UploadTestCaseAttachmentAsync(long testCaseId, [AliasAs("file")] IEnumerable<ByteArrayPart> attachments);
         
         /// <summary>
         /// Delete test case attachment
         /// </summary>
         [Delete("/api/rs/testcase/attachment/{id}")]
-        Task<IApiResponse> DeleteTestCaseAttachment([AliasAs("id")] long testCaseId);
+        Task<IApiResponse> DeleteTestCaseAttachmentAsync([AliasAs("id")] long testCaseId);
+        
+        /// <summary>
+        /// Delete test case attachment
+        /// </summary>
+        [Get("/api/rs/testcase/attachment/{id}/content")]
+        Task<IApiResponse<string>> GetTestCaseAttachmentContentAsync([AliasAs("id")] long attachmentId);
         
         #endregion
         
@@ -96,13 +102,13 @@ namespace Quantori.AllureTestOpsClient
         /// Update scenario for test case
         /// </summary>
         [Post("/api/rs/testcase/{id}/scenario")]
-        Task<IApiResponse<Scenario>> UpdateTestCaseScenario([AliasAs("id")] long testCaseId, [Body] Scenario scenario);
+        Task<IApiResponse<Scenario>> UpdateTestCaseScenarioAsync([AliasAs("id")] long testCaseId, [Body] Scenario scenario);
         
         /// <summary>
         /// Delete scenario for test case
         /// </summary>
         [Delete("/api/rs/testcase/{id}/scenario")]
-        Task<IApiResponse<Scenario>> DeleteTestCaseScenario([AliasAs("id")] long testCaseId);
+        Task<IApiResponse<Scenario>> DeleteTestCaseScenarioAsync([AliasAs("id")] long testCaseId);
 
         #endregion
     }

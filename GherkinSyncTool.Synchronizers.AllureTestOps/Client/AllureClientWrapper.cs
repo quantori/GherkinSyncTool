@@ -17,19 +17,19 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
     {
         private static readonly Logger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
 
-        private readonly AllureTestOpsSettings _azureDevopsSettings =
+        private readonly AllureTestOpsSettings _allureTestOpsSettings =
             ConfigurationManager.GetConfiguration<AllureTestOpsConfigs>().AllureTestOpsSettings;
 
         private readonly IAllureClient _allureClient;
 
         public AllureClientWrapper()
         {
-            _allureClient = AllureClient.Get(_azureDevopsSettings.BaseUrl, _azureDevopsSettings.AccessToken);
+            _allureClient = AllureClient.Get(_allureTestOpsSettings.BaseUrl, _allureTestOpsSettings.AccessToken);
         }
 
         public IEnumerable<TestCaseContent> GetAllTestCases()
         {
-            return GetAllContent(i => _allureClient.GetTestCasesAsync(_azureDevopsSettings.ProjectId, i).Result);
+            return GetAllContent(i => _allureClient.GetTestCasesAsync(_allureTestOpsSettings.ProjectId, i).Result);
         }
 
         private void ValidateResponse(IApiResponse response)
@@ -67,12 +67,12 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             var testCaseOverview = _allureClient.GetTestCaseOverviewAsync(currentCase.Id).Result.Content;
             var contentEqual = IsTestCaseContentEqual(testCaseOverview, caseToUpdate);
             bool updated = false;
-            
+
             bool scenarioIsEqual;
             //Remove scenario
             if (testCaseOverview!.Scenario is not null && caseToUpdate.CreateTestCaseRequest.Scenario is null)
             {
-                var response = _allureClient.DeleteTestCaseScenario(testCaseOverview.Id).Result;
+                var response = _allureClient.DeleteTestCaseScenarioAsync(testCaseOverview.Id).Result;
                 ValidateResponse(response);
 
                 scenarioIsEqual = true;
@@ -81,6 +81,15 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             else
             {
                 scenarioIsEqual = IsScenarioEqual(testCaseOverview, caseToUpdate);
+            }
+
+            if (!contentEqual && scenarioIsEqual && caseToUpdate.CreateTestCaseRequest.Scenario is not null)
+            {
+                for (var i = 0; i < caseToUpdate.CreateTestCaseRequest.Scenario.Steps.Count; i++)
+                {
+                    var step = caseToUpdate.CreateTestCaseRequest.Scenario.Steps[i];
+                    step.Attachments = testCaseOverview.Scenario!.Steps[i].Attachments;
+                }
             }
 
             if (!contentEqual || !scenarioIsEqual)
@@ -140,17 +149,31 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
                 if (stepsFromAllure[i].Attachments.Any() && caseToUpdate.StepsAttachments.ContainsKey(i))
                 {
-                    if (stepsFromAllure[i].Attachments.FirstOrDefault()?.ContentLength != Encoding.Default.GetString(caseToUpdate.StepsAttachments[i].Value).Length)
+                    if (stepsFromAllure[i].Attachments.FirstOrDefault() is null)
                     {
                         UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
                         return false;
                     }
-                    
-                    //TODO: compare attachment content
+
+                    var attachment = Encoding.Default.GetString(caseToUpdate.StepsAttachments[i].Value);
+                    if (stepsFromAllure[i].Attachments.FirstOrDefault()?.ContentLength != attachment.Length)
+                    {
+                        UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
+                        return false;
+                    }
+
+                    var allureAttachment = _allureClient.GetTestCaseAttachmentContentAsync(stepsFromAllure[i].Attachments.FirstOrDefault()!.Id).Result;
+
+                    if (!allureAttachment.Content!.Equals(attachment))
+                    {
+                        UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
+                        return false;
+                    }
                 }
 
                 if (!stepsFromAllure[i].Keyword.Equals(stepsFromFeature[i].Keyword) || !stepsFromAllure[i].Name.Equals(stepsFromFeature[i].Name))
                 {
+                    UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
                     return false;
                 }
             }
@@ -181,14 +204,14 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
                 throw new ArgumentException("There are no test case attachments.");
             }
 
-            var response = _allureClient.UploadTestCaseAttachment(testCaseId, byteArrayParts).Result;
+            var response = _allureClient.UploadTestCaseAttachmentAsync(testCaseId, byteArrayParts).Result;
             ValidateResponse(response);
             return response.Content;
         }
 
         public void RemoveTestCaseAttachment(long id)
         {
-            var response = _allureClient.DeleteTestCaseAttachment(id).Result;
+            var response = _allureClient.DeleteTestCaseAttachmentAsync(id).Result;
             ValidateResponse(response);
         }
 
@@ -196,7 +219,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         {
             AddTestCaseStepAttachments(caseRequestExtended, caseToUpdate.Id);
 
-            var response = _allureClient.UpdateTestCaseScenario(caseToUpdate.Id, caseRequestExtended.CreateTestCaseRequest.Scenario).Result;
+            var response = _allureClient.UpdateTestCaseScenarioAsync(caseToUpdate.Id, caseRequestExtended.CreateTestCaseRequest.Scenario).Result;
 
             ValidateResponse(response);
         }
