@@ -33,7 +33,7 @@ namespace Quantori.AllureTestOpsClient
         /// </summary>
         /// <param name="testCaseId"></param>
         /// <returns></returns>
-        [Get("/api/rs/testcase/{Id}/overview")]
+        [Get("/api/rs/testcase/{id}/overview")]
         Task<IApiResponse<TestCaseOverview>> GetTestCaseOverviewAsync([AliasAs("id")] ulong testCaseId);
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="testCaseId"></param>
         /// <param name="updateTestCaseRequest"></param>
         /// <returns></returns>
-        [Patch("/api/rs/testcase/{Id}")]
+        [Patch("/api/rs/testcase/{id}")]
         Task<IApiResponse<TestCase>> UpdateTestCaseAsync([AliasAs("id")] ulong testCaseId, [Body] TestCaseRequest updateTestCaseRequest);
 
         /// <summary>
@@ -82,16 +82,28 @@ namespace Quantori.AllureTestOpsClient
         [Post("/api/rs/testcase/attachment")]
         Task<IApiResponse<List<Attachment>>> UploadTestCaseAttachment(long testCaseId, [AliasAs("file")] IEnumerable<ByteArrayPart> attachments);
         
+        /// <summary>
+        /// Delete test case attachment
+        /// </summary>
+        [Delete("/api/rs/testcase/attachment/{id}")]
+        Task<IApiResponse> DeleteTestCaseAttachment([AliasAs("id")] long testCaseId);
+        
         #endregion
         
-        #region Test case scenario controller
+        #region Test case scenario
         
         /// <summary>
         /// Update scenario for test case
         /// </summary>
-        [Post("/api/rs/testcase/{Id}/scenario")]
+        [Post("/api/rs/testcase/{id}/scenario")]
         Task<IApiResponse<Scenario>> UpdateTestCaseScenario([AliasAs("id")] long testCaseId, [Body] Scenario scenario);
-        #endregion
         
+        /// <summary>
+        /// Delete scenario for test case
+        /// </summary>
+        [Delete("/api/rs/testcase/{id}/scenario")]
+        Task<IApiResponse<Scenario>> DeleteTestCaseScenario([AliasAs("id")] long testCaseId);
+
+        #endregion
     }
 }

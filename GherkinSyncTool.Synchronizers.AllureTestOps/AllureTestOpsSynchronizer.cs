@@ -122,7 +122,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
             {
                 try
                 {
-                    _allureClientWrapper.AddStepAttachments(caseRequestExtended, newTestCase);
+                    _allureClientWrapper.UploadStepAttachments(caseRequestExtended, newTestCase);
                 }
                 catch (AllureException e)
                 {
