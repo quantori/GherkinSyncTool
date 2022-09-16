@@ -235,6 +235,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             if (!currentCase.Name.Equals(caseToUpdate.CreateTestCaseRequest.Name)) return false;
             if (!currentCase.Automated.Equals(caseToUpdate.CreateTestCaseRequest.Automated)) return false;
             if (!currentCase.Status.Id.Equals(caseToUpdate.CreateTestCaseRequest.StatusId)) return false;
+            if (!currentCase.Description.Equals(caseToUpdate.CreateTestCaseRequest.Description)) return false;
             return true;
         }
 

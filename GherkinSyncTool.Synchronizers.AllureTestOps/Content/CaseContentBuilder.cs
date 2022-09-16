@@ -15,6 +15,7 @@ using Refit;
 using Scenario = Gherkin.Ast.Scenario;
 using Step = Gherkin.Ast.Step;
 using AllureTestCaseStep = Quantori.AllureTestOpsClient.Model.Step;
+using AllureScenario = Quantori.AllureTestOpsClient.Model.Scenario;
 
 namespace GherkinSyncTool.Synchronizers.AllureTestOps.Content;
 
@@ -70,16 +71,19 @@ public class CaseContentBuilder
 
     private Dictionary<int, ByteArrayPart> AddStepAttachments(Scenario scenario, IFeatureFile featureFile)
     {
-        var extractAttachments = ExtractAttachments(scenario.Steps.ToList());
+        var attachments = ExtractAttachments(scenario.Steps.ToList());
 
         var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
         if (background is not null)
         {
+            var backgroundStepCount = background.Steps.Count();
+            var attachmentsShifted = attachments.ToDictionary(attachment => attachment.Key + backgroundStepCount, attachment => attachment.Value);
+            
             var backgroundAttachments = ExtractAttachments(background.Steps.ToList());
-            return backgroundAttachments.Concat(extractAttachments).ToDictionary(pair => pair.Key, pair => pair.Value);
+            return backgroundAttachments.Concat(attachmentsShifted).ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
-        return extractAttachments;
+        return attachments;
     }
 
     private Dictionary<int, ByteArrayPart> ExtractAttachments(List<Step> steps)
@@ -109,12 +113,12 @@ public class CaseContentBuilder
         return result;
     }
 
-    private Quantori.AllureTestOpsClient.Model.Scenario AddScenario(Scenario scenario, IFeatureFile featureFile)
+    private AllureScenario AddScenario(Scenario scenario, IFeatureFile featureFile)
     {
         var steps = GetSteps(scenario, featureFile);
         if (!steps.Any()) return null;
 
-        var allureScenario = new Quantori.AllureTestOpsClient.Model.Scenario
+        var allureScenario = new AllureScenario
         {
             Steps = new List<AllureTestCaseStep>()
         };
@@ -166,12 +170,71 @@ public class CaseContentBuilder
         var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
         if (background is not null && (!string.IsNullOrWhiteSpace(background.Name) || !string.IsNullOrWhiteSpace(background.Description)))
         {
-            description.AppendLine($"{background.Keyword}: {background.Name}");
-            description.AppendLine(background.Description);
+            description.AppendLine($"**{background.Keyword}:** {background.Name}");
+            if(!string.IsNullOrWhiteSpace(background.Description)) description.AppendLine(background.Description);
         }
 
-        description.Append($"Feature file: {featureFile.RelativePath}");
+        description.AppendLine($"**Feature file:** {featureFile.RelativePath}");
+        
+        var examples = scenario.Examples.ToList();
+
+        if (examples.Any())
+        {
+            foreach (var example in examples)
+            {
+                description.AppendLine($"**{example.Keyword}:** {example.Name}");
+                if (!string.IsNullOrEmpty(example.Description))
+                {
+                    description.AppendLine(example.Description);
+                }
+
+                if (example.TableHeader is null) continue;
+
+                var tableRows = new List<TableRow> { example.TableHeader };
+                tableRows.AddRange(example.TableBody);
+                description.AppendLine(ConvertToMarkdownTable(tableRows));
+            }
+        }
+
         return description.ToString();
+    }
+
+    private string ConvertToMarkdownTable(List<TableRow> tableRows)
+    {
+        var table = new StringBuilder();
+        table.AppendLine();
+        table.Append("|");
+
+        //Header
+        foreach (var cell in tableRows.First().Cells)
+        {
+            table.Append($"{cell.Value}|");
+        }
+        table.AppendLine();
+        table.Append("|");
+        //Header delimiter
+        foreach (var unused in tableRows.First().Cells)
+        {
+            table.Append("---|");
+        }
+
+        table.AppendLine();
+
+        //Table body
+        for (int i = 1; i < tableRows.Count; i++)
+        {
+            table.Append("|");
+
+            var row = tableRows[i];
+            foreach (var cell in row.Cells)
+            {
+                table.Append($"{cell.Value}|");
+            }
+
+            table.AppendLine();
+        }
+
+        return table.ToString();
     }
 
     private long AddWorkflow(Scenario scenario, IFeatureFile featureFile)
