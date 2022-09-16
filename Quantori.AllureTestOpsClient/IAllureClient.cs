@@ -9,6 +9,7 @@ namespace Quantori.AllureTestOpsClient
     [Headers("accept: */*", "Authorization: Api-Token")]
     public interface IAllureClient
     {
+        #region Test case controller
         /// <summary>
         /// Find all test cases for specified project
         /// </summary>
@@ -44,14 +45,20 @@ namespace Quantori.AllureTestOpsClient
         /// <returns></returns>
         [Patch("/api/rs/testcase/{id}")]
         Task<IApiResponse<TestCase>> UpdateTestCaseAsync([AliasAs("id")] ulong testCaseId, [Body] TestCaseRequest updateTestCaseRequest);
-
+        
+        #endregion
+        
+        #region Status controller
         /// <summary>
         /// Find all statuses
         /// </summary>
         /// <returns></returns>
         [Get("/api/rs/status")]
         Task<IApiResponse<GetContentResponse<Status>>> GetStatusAsync(int? workflowId = null, int page = 0, int size = 100, string sort = null);
-
+        #endregion
+        
+        
+        #region Workflow schema controller
         /// <summary>
         /// Find all workflow schemas for given project
         /// </summary>
@@ -61,7 +68,9 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="sort"></param>
         [Get("/api/rs/workflowschema")]
         Task<IApiResponse<GetContentResponse<WorkflowSchema>>> GetWorkflowSchemaAsync(int projectId, int page = 0, int size = 100, string sort = null);
+        #endregion
         
+        #region Workflow controller
         /// <summary>
         /// Find all workflow
         /// </summary>
@@ -72,8 +81,9 @@ namespace Quantori.AllureTestOpsClient
         /// <returns></returns>
         [Get("/api/rs/workflow")]
         Task<IApiResponse<GetContentResponse<WorkflowContent>>> GetWorkflowAsync(int page = 0, int size = 100, string sort = null);
+        #endregion
         
-        #region Test case attachment
+        #region Test case attachment controller
 
         /// <summary>
         /// Upload new test case attachments
@@ -96,7 +106,7 @@ namespace Quantori.AllureTestOpsClient
         
         #endregion
         
-        #region Test case scenario
+        #region Test case scenario controller
         
         /// <summary>
         /// Update scenario for test case
