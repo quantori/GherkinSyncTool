@@ -14,6 +14,7 @@ using Quantori.AllureTestOpsClient.Model;
 using Refit;
 using Scenario = Gherkin.Ast.Scenario;
 using Step = Gherkin.Ast.Step;
+using AllureTestCaseStep = Quantori.AllureTestOpsClient.Model.Step;
 
 namespace GherkinSyncTool.Synchronizers.AllureTestOps.Content;
 
@@ -115,13 +116,13 @@ public class CaseContentBuilder
 
         var allureScenario = new Quantori.AllureTestOpsClient.Model.Scenario
         {
-            Steps = new List<Quantori.AllureTestOpsClient.Model.Step>()
+            Steps = new List<AllureTestCaseStep>()
         };
         allureScenario.Steps.AddRange(steps);
         return allureScenario;
     }
 
-    private List<Quantori.AllureTestOpsClient.Model.Step> GetSteps(Scenario scenario, IFeatureFile featureFile)
+    private List<AllureTestCaseStep> GetSteps(Scenario scenario, IFeatureFile featureFile)
     {
         var scenarioSteps = ExtractSteps(scenario.Steps);
 
@@ -135,9 +136,9 @@ public class CaseContentBuilder
         return scenarioSteps;
     }
 
-    private List<Quantori.AllureTestOpsClient.Model.Step> ExtractSteps(IEnumerable<Step> steps)
+    private List<AllureTestCaseStep> ExtractSteps(IEnumerable<Step> steps)
     {
-        return steps.Select(step => new Quantori.AllureTestOpsClient.Model.Step { Keyword = step.Keyword.Trim(), Name = step.Text }).ToList();
+        return steps.Select(step => new AllureTestCaseStep { Keyword = step.Keyword.Trim(), Name = step.Text }).ToList();
     }
 
     private string ConvertToCsvTable(List<TableRow> tableRows)
