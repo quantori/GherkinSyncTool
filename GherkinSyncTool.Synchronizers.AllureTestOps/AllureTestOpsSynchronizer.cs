@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -94,13 +95,13 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                 }
             }
             //TODO:
-            DeleteNotExistingScenarios(allureTestCases, featureFilesTagIds);
+            //DeleteNotExistingScenarios(allureTestCases, featureFilesTagIds);
             Log.Debug(@$"Synchronization with Allure TestOps finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
         }
 
         private void DeleteNotExistingScenarios(List<TestCaseContent> allureTestCases, List<ulong> featureFilesTagIds)
         {
-            //TODO:
+            throw new NotImplementedException();
         }
 
         private TestCase CreateNewTestCase(CreateTestCaseRequestExtended caseRequestExtended)
