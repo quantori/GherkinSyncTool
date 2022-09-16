@@ -101,7 +101,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
 
         private void DeleteNotExistingScenarios(List<TestCaseContent> allureTestCases, List<ulong> featureFilesTagIds)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("The method should be implemented in future versions");
         }
 
         private TestCase CreateNewTestCase(CreateTestCaseRequestExtended caseRequestExtended)
