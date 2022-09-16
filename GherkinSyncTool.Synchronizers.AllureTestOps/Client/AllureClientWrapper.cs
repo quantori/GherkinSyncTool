@@ -65,8 +65,8 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         public void UpdateTestCase(TestCaseContent currentCase, CreateTestCaseRequestExtended caseToUpdate)
         {
             var testCaseOverview = _allureClient.GetTestCaseOverviewAsync(currentCase.Id).Result.Content;
-            var contentEqual = IsTestCaseContentEqual(testCaseOverview, caseToUpdate);
-            bool updated = false;
+            var contentEqual = AreTestCasesContentsEqual(testCaseOverview, caseToUpdate);
+            var updated = false;
 
             bool scenarioIsEqual;
             //Remove scenario
@@ -80,7 +80,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             }
             else
             {
-                scenarioIsEqual = IsScenarioEqual(testCaseOverview, caseToUpdate);
+                scenarioIsEqual = AreTestCaseScenariosEqual(testCaseOverview, caseToUpdate);
                 if (!scenarioIsEqual)
                 {
                     if (caseToUpdate.StepsAttachments.Any())
@@ -111,7 +111,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
                 : $"Up-to-date: [{currentCase.Id}] {currentCase.Name}");
         }
 
-        private bool IsScenarioEqual(TestCaseOverview testCaseOverview, CreateTestCaseRequestExtended caseToUpdate)
+        private bool AreTestCaseScenariosEqual(TestCaseOverview testCaseOverview, CreateTestCaseRequestExtended caseToUpdate)
         {
             if (testCaseOverview.Scenario is null && caseToUpdate.CreateTestCaseRequest.Scenario is null)
             {
@@ -230,7 +230,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             AddTestCaseStepAttachments(caseToUpdate, testCaseOverview.Id);
         }
 
-        private static bool IsTestCaseContentEqual(TestCaseOverview currentCase, CreateTestCaseRequestExtended caseToUpdate)
+        private static bool AreTestCasesContentsEqual(TestCaseOverview currentCase, CreateTestCaseRequestExtended caseToUpdate)
         {
             if (!currentCase.Name.Equals(caseToUpdate.CreateTestCaseRequest.Name)) return false;
             if (!currentCase.Automated.Equals(caseToUpdate.CreateTestCaseRequest.Automated)) return false;
