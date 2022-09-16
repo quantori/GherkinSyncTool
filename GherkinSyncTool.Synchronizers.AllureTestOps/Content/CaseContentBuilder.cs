@@ -11,7 +11,11 @@ using GherkinSyncTool.Synchronizers.AllureTestOps.Client;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Model;
 using NLog;
 using Quantori.AllureTestOpsClient.Model;
+using Refit;
 using Scenario = Gherkin.Ast.Scenario;
+using Step = Gherkin.Ast.Step;
+using AllureTestCaseStep = Quantori.AllureTestOpsClient.Model.Step;
+using AllureScenario = Quantori.AllureTestOpsClient.Model.Scenario;
 
 namespace GherkinSyncTool.Synchronizers.AllureTestOps.Content;
 
@@ -45,19 +49,116 @@ public class CaseContentBuilder
         _context = context;
     }
 
-    public CreateTestCaseRequest BuildCaseRequest(Scenario scenario, IFeatureFile featureFile)
+    public CreateTestCaseRequestExtended BuildCaseRequest(Scenario scenario, IFeatureFile featureFile)
     {
-        var caseRequest = new CreateTestCaseRequest
+        var createTestCaseRequestExtended = new CreateTestCaseRequestExtended
         {
-            Name = scenario.Name,
-            ProjectId = _allureTestOpsSettings.ProjectId,
-            Automated = IsAutomated(scenario, featureFile),
-            StatusId = AddStatus(scenario, featureFile),
-            WorkflowId = AddWorkflow(scenario, featureFile),
-            Description = AddDescription(scenario, featureFile)
+            CreateTestCaseRequest =
+            {
+                Name = scenario.Name,
+                ProjectId = _allureTestOpsSettings.ProjectId,
+                Automated = IsAutomated(scenario, featureFile),
+                StatusId = AddStatus(scenario, featureFile),
+                WorkflowId = AddWorkflow(scenario, featureFile),
+                Description = AddDescription(scenario, featureFile),
+                Scenario = AddScenario(scenario, featureFile)
+            },
+            StepsAttachments = AddStepAttachments(scenario, featureFile)
         };
 
-        return caseRequest;
+        return createTestCaseRequestExtended;
+    }
+
+    private Dictionary<int, ByteArrayPart> AddStepAttachments(Scenario scenario, IFeatureFile featureFile)
+    {
+        var attachments = ExtractAttachments(scenario.Steps.ToList());
+
+        var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
+        if (background is not null)
+        {
+            var backgroundStepCount = background.Steps.Count();
+            var attachmentsShifted = attachments.ToDictionary(attachment => attachment.Key + backgroundStepCount, attachment => attachment.Value);
+            
+            var backgroundAttachments = ExtractAttachments(background.Steps.ToList());
+            return backgroundAttachments.Concat(attachmentsShifted).ToDictionary(pair => pair.Key, pair => pair.Value);
+        }
+
+        return attachments;
+    }
+
+    private Dictionary<int, ByteArrayPart> ExtractAttachments(List<Step> steps)
+    {
+        var result = new Dictionary<int, ByteArrayPart>();
+
+        for (var index = 0; index < steps.Count; index++)
+        {
+            var step = steps[index];
+
+            switch (step.Argument)
+            {
+                case DocString docString:
+                    
+                    var textBytes = Encoding.ASCII.GetBytes(docString.Content);
+                    result.Add(index, new ByteArrayPart(textBytes, "Text", "text/plain"));
+                    break;
+                
+                case DataTable table:
+                    
+                    var csvBytes = Encoding.ASCII.GetBytes(ConvertToCsvTable(table.Rows.ToList()));
+                    result.Add(index, new ByteArrayPart(csvBytes, "Table", "text/csv"));
+                    break;
+            }
+        }
+
+        return result;
+    }
+
+    private AllureScenario AddScenario(Scenario scenario, IFeatureFile featureFile)
+    {
+        var steps = GetSteps(scenario, featureFile);
+        if (!steps.Any()) return null;
+
+        var allureScenario = new AllureScenario
+        {
+            Steps = new List<AllureTestCaseStep>()
+        };
+        allureScenario.Steps.AddRange(steps);
+        return allureScenario;
+    }
+
+    private List<AllureTestCaseStep> GetSteps(Scenario scenario, IFeatureFile featureFile)
+    {
+        var scenarioSteps = ExtractSteps(scenario.Steps);
+
+        var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
+        if (background is not null)
+        {
+            var backgroundSteps = ExtractSteps(background.Steps);
+            return backgroundSteps.Concat(scenarioSteps).ToList();
+        }
+
+        return scenarioSteps;
+    }
+
+    private List<AllureTestCaseStep> ExtractSteps(IEnumerable<Step> steps)
+    {
+        return steps.Select(step => new AllureTestCaseStep { Keyword = step.Keyword.Trim(), Name = step.Text }).ToList();
+    }
+
+    private string ConvertToCsvTable(List<TableRow> tableRows)
+    {
+        var table = new StringBuilder();
+
+        //Header
+        table.AppendLine(string.Join(",", tableRows.First().Cells.Select(cell => cell.Value)));
+
+        //Table body
+        for (var i = 1; i < tableRows.Count; i++)
+        {
+            table.AppendLine(string.Join(",", tableRows[i].Cells.Select(cell => cell.Value)));
+        }
+
+        return table.ToString();
     }
 
     private string AddDescription(Scenario scenario, IFeatureFile featureFile)
@@ -69,11 +170,71 @@ public class CaseContentBuilder
         var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
         if (background is not null && (!string.IsNullOrWhiteSpace(background.Name) || !string.IsNullOrWhiteSpace(background.Description)))
         {
-            description.AppendLine($"{background.Keyword}: {background.Name}");
-            description.AppendLine(background.Description);
+            description.AppendLine($"**{background.Keyword}:** {background.Name}");
+            if(!string.IsNullOrWhiteSpace(background.Description)) description.AppendLine(background.Description);
         }
-        description.Append($"Feature file: {featureFile.RelativePath}");
+
+        description.AppendLine($"**Feature file:** {featureFile.RelativePath}");
+        
+        var examples = scenario.Examples.ToList();
+
+        if (examples.Any())
+        {
+            foreach (var example in examples)
+            {
+                description.AppendLine($"**{example.Keyword}:** {example.Name}");
+                if (!string.IsNullOrEmpty(example.Description))
+                {
+                    description.AppendLine(example.Description);
+                }
+
+                if (example.TableHeader is null) continue;
+
+                var tableRows = new List<TableRow> { example.TableHeader };
+                tableRows.AddRange(example.TableBody);
+                description.AppendLine(ConvertToMarkdownTable(tableRows));
+            }
+        }
+
         return description.ToString();
+    }
+
+    private string ConvertToMarkdownTable(List<TableRow> tableRows)
+    {
+        var table = new StringBuilder();
+        table.AppendLine();
+        table.Append("|");
+
+        //Header
+        foreach (var cell in tableRows.First().Cells)
+        {
+            table.Append($"{cell.Value}|");
+        }
+        table.AppendLine();
+        table.Append("|");
+        //Header delimiter
+        foreach (var unused in tableRows.First().Cells)
+        {
+            table.Append("---|");
+        }
+
+        table.AppendLine();
+
+        //Table body
+        for (int i = 1; i < tableRows.Count; i++)
+        {
+            table.Append("|");
+
+            var row = tableRows[i];
+            foreach (var cell in row.Cells)
+            {
+                table.Append($"{cell.Value}|");
+            }
+
+            table.AppendLine();
+        }
+
+        return table.ToString();
     }
 
     private long AddWorkflow(Scenario scenario, IFeatureFile featureFile)

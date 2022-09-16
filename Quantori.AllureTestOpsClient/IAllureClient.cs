@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Quantori.AllureTestOpsClient.Model;
 using Refit;
@@ -8,6 +9,7 @@ namespace Quantori.AllureTestOpsClient
     [Headers("accept: */*", "Authorization: Api-Token")]
     public interface IAllureClient
     {
+        #region Test case controller
         /// <summary>
         /// Find all test cases for specified project
         /// </summary>
@@ -32,7 +34,7 @@ namespace Quantori.AllureTestOpsClient
         /// </summary>
         /// <param name="testCaseId"></param>
         /// <returns></returns>
-        [Get("/api/rs/testcase/{Id}/overview")]
+        [Get("/api/rs/testcase/{id}/overview")]
         Task<IApiResponse<TestCaseOverview>> GetTestCaseOverviewAsync([AliasAs("id")] ulong testCaseId);
 
         /// <summary>
@@ -41,16 +43,22 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="testCaseId"></param>
         /// <param name="updateTestCaseRequest"></param>
         /// <returns></returns>
-        [Patch("/api/rs/testcase/{Id}")]
+        [Patch("/api/rs/testcase/{id}")]
         Task<IApiResponse<TestCase>> UpdateTestCaseAsync([AliasAs("id")] ulong testCaseId, [Body] TestCaseRequest updateTestCaseRequest);
-
+        
+        #endregion
+        
+        #region Status controller
         /// <summary>
         /// Find all statuses
         /// </summary>
         /// <returns></returns>
         [Get("/api/rs/status")]
         Task<IApiResponse<GetContentResponse<Status>>> GetStatusAsync(int? workflowId = null, int page = 0, int size = 100, string sort = null);
-
+        #endregion
+        
+        
+        #region Workflow schema controller
         /// <summary>
         /// Find all workflow schemas for given project
         /// </summary>
@@ -60,7 +68,9 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="sort"></param>
         [Get("/api/rs/workflowschema")]
         Task<IApiResponse<GetContentResponse<WorkflowSchema>>> GetWorkflowSchemaAsync(int projectId, int page = 0, int size = 100, string sort = null);
+        #endregion
         
+        #region Workflow controller
         /// <summary>
         /// Find all workflow
         /// </summary>
@@ -71,5 +81,45 @@ namespace Quantori.AllureTestOpsClient
         /// <returns></returns>
         [Get("/api/rs/workflow")]
         Task<IApiResponse<GetContentResponse<WorkflowContent>>> GetWorkflowAsync(int page = 0, int size = 100, string sort = null);
+        #endregion
+        
+        #region Test case attachment controller
+
+        /// <summary>
+        /// Upload new test case attachments
+        /// </summary>
+        [Multipart]
+        [Post("/api/rs/testcase/attachment")]
+        Task<IApiResponse<List<Attachment>>> UploadTestCaseAttachmentAsync(long testCaseId, [AliasAs("file")] IEnumerable<ByteArrayPart> attachments);
+        
+        /// <summary>
+        /// Delete test case attachment
+        /// </summary>
+        [Delete("/api/rs/testcase/attachment/{id}")]
+        Task<IApiResponse> DeleteTestCaseAttachmentAsync([AliasAs("id")] long testCaseId);
+        
+        /// <summary>
+        /// Delete test case attachment
+        /// </summary>
+        [Get("/api/rs/testcase/attachment/{id}/content")]
+        Task<IApiResponse<string>> GetTestCaseAttachmentContentAsync([AliasAs("id")] long attachmentId);
+        
+        #endregion
+        
+        #region Test case scenario controller
+        
+        /// <summary>
+        /// Update scenario for test case
+        /// </summary>
+        [Post("/api/rs/testcase/{id}/scenario")]
+        Task<IApiResponse<Scenario>> UpdateTestCaseScenarioAsync([AliasAs("id")] long testCaseId, [Body] Scenario scenario);
+        
+        /// <summary>
+        /// Delete scenario for test case
+        /// </summary>
+        [Delete("/api/rs/testcase/{id}/scenario")]
+        Task<IApiResponse<Scenario>> DeleteTestCaseScenarioAsync([AliasAs("id")] long testCaseId);
+
+        #endregion
     }
 }

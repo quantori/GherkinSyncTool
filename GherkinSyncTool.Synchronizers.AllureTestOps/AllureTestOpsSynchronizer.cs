@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -8,6 +9,7 @@ using GherkinSyncTool.Models.Utils;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Client;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Content;
 using GherkinSyncTool.Synchronizers.AllureTestOps.Exception;
+using GherkinSyncTool.Synchronizers.AllureTestOps.Model;
 using NLog;
 using Quantori.AllureTestOpsClient.Model;
 using Scenario = Gherkin.Ast.Scenario;
@@ -35,6 +37,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
             Log.Info("# Start synchronization with Allure TestOps");
 
             var allureTestCases = _allureClientWrapper.GetAllTestCases().ToList();
+            var featureFilesTagIds = new List<ulong>(); 
 
             foreach (var featureFile in featureFiles)
             {
@@ -44,14 +47,14 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                 {
                     var tagId = scenario.Tags.FirstOrDefault(tag => tag.Name.Contains(_gherkinSyncToolConfig.TagIdPrefix));
 
-                    var caseRequest = _caseContentBuilder.BuildCaseRequest(scenario, featureFile);
+                    var caseRequestExtended = _caseContentBuilder.BuildCaseRequest(scenario, featureFile);
 
                     // Create test case for feature file which is getting synced for the first time, so no tag id present.  
                     if (tagId is null)
                     {
-                        var newTestCase = CreateTestCase(caseRequest);
-                        if(newTestCase is null) continue;
-                        
+                        var newTestCase = CreateNewTestCase(caseRequestExtended);
+                        if (newTestCase is null) continue;
+
                         var lineNumberToInsert = scenario.Location.Line - 1 + insertedTagIdsCount;
                         var formattedTagId = GherkinHelper.FormatTagId(newTestCase.Id.ToString());
                         TextFilesEditMethods.InsertLineToTheFile(featureFile.AbsolutePath, lineNumberToInsert,
@@ -63,14 +66,15 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                     if (tagId is not null)
                     {
                         var caseIdFromFile = GherkinHelper.GetTagId(tagId);
-                        //featureFilesTagIds.Add(caseId);
+                        featureFilesTagIds.Add(caseIdFromFile);
+                        
                         var allureTestCase = allureTestCases.FirstOrDefault(c => c.Id == caseIdFromFile);
                         if (allureTestCase is null)
                         {
                             Log.Warn($"Case with id {caseIdFromFile} not found. Recreating missing case");
-                            var newTestCase = CreateTestCase(caseRequest);
-                            if(newTestCase is null) continue;
-                            
+                            var newTestCase = CreateNewTestCase(caseRequestExtended);
+                            if (newTestCase is null) continue;
+
                             var formattedTagId = GherkinHelper.FormatTagId(newTestCase.Id.ToString());
                             TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath,
                                 tagId.Location.Line - 1 + insertedTagIdsCount, formattedTagId);
@@ -79,35 +83,56 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                         {
                             try
                             {
-                                _allureClientWrapper.UpdateTestCase(allureTestCase, caseRequest);    
+                                _allureClientWrapper.UpdateTestCase(allureTestCase, caseRequestExtended);
                             }
                             catch (AllureException e)
                             {
-                                Log.Error(e, $"The test case has not been updated: {caseRequest.Name}");
+                                Log.Error(e, $"The test case has not been updated: {caseRequestExtended.CreateTestCaseRequest.Name}");
                                 _context.IsRunSuccessful = false;
                             }
                         }
                     }
                 }
             }
-
+            //TODO:
+            //DeleteNotExistingScenarios(allureTestCases, featureFilesTagIds);
             Log.Debug(@$"Synchronization with Allure TestOps finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
         }
 
-        private TestCase CreateTestCase(CreateTestCaseRequest caseRequest)
+        private void DeleteNotExistingScenarios(List<TestCaseContent> allureTestCases, List<ulong> featureFilesTagIds)
         {
-            TestCase result = null;
+            throw new NotImplementedException("The method should be implemented in future versions");
+        }
+
+        private TestCase CreateNewTestCase(CreateTestCaseRequestExtended caseRequestExtended)
+        {
+            TestCase newTestCase = null;
             try
             {
-                result = _allureClientWrapper.AddTestCase(caseRequest);
-                return result;
+                newTestCase = _allureClientWrapper.AddTestCase(caseRequestExtended.CreateTestCaseRequest);
             }
             catch (AllureException e)
             {
-                Log.Error(e, $"The case has not been created: {caseRequest.Name}");
+                Log.Error(e, $"The case has not been created: {caseRequestExtended.CreateTestCaseRequest.Name}");
                 _context.IsRunSuccessful = false;
-                return result;
             }
+
+            if (newTestCase is null) return null;
+            
+            if (caseRequestExtended.StepsAttachments.Any())
+            {
+                try
+                {
+                    _allureClientWrapper.UploadStepAttachments(caseRequestExtended, newTestCase);
+                }
+                catch (AllureException e)
+                {
+                    Log.Error(e, $"The test case steps attachment has not been uploaded: [{newTestCase.Id}]{caseRequestExtended.CreateTestCaseRequest.Name}");
+                    _context.IsRunSuccessful = false;
+                }
+            }
+
+            return newTestCase;
         }
     }
 }
