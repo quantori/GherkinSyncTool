@@ -81,6 +81,13 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             else
             {
                 scenarioIsEqual = IsScenarioEqual(testCaseOverview, caseToUpdate);
+                if (!scenarioIsEqual)
+                {
+                    if (caseToUpdate.StepsAttachments.Any())
+                    {
+                        UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
+                    }    
+                }
             }
 
             if (!contentEqual && scenarioIsEqual && caseToUpdate.CreateTestCaseRequest.Scenario is not null)
@@ -113,20 +120,11 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
             if (testCaseOverview.Scenario is null && caseToUpdate.CreateTestCaseRequest.Scenario.Steps is not null)
             {
-                if (caseToUpdate.StepsAttachments.Any())
-                {
-                    UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
-                }
-                return false;
+               return false;
             }
 
             if (testCaseOverview.Scenario!.Steps.Count != caseToUpdate.CreateTestCaseRequest.Scenario.Steps!.Count)
             {
-                if (caseToUpdate.StepsAttachments.Any())
-                {
-                    UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
-                }
-
                 return false;
             }
 
@@ -137,13 +135,11 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             {
                 if (!stepsFromAllure[i].Attachments.Any() && caseToUpdate.StepsAttachments.ContainsKey(i))
                 {
-                    UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
                     return false;
                 }
 
                 if (stepsFromAllure[i].Attachments.Any() && !caseToUpdate.StepsAttachments.ContainsKey(i))
                 {
-                    UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
                     return false;
                 }
 
@@ -151,14 +147,12 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
                 {
                     if (stepsFromAllure[i].Attachments.FirstOrDefault() is null)
                     {
-                        UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
                         return false;
                     }
 
                     var attachment = Encoding.Default.GetString(caseToUpdate.StepsAttachments[i].Value);
                     if (stepsFromAllure[i].Attachments.FirstOrDefault()?.ContentLength != attachment.Length)
                     {
-                        UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
                         return false;
                     }
 
@@ -166,14 +160,12 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
                     if (!allureAttachment.Content!.Equals(attachment))
                     {
-                        UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
                         return false;
                     }
                 }
 
                 if (!stepsFromAllure[i].Keyword.Equals(stepsFromFeature[i].Keyword) || !stepsFromAllure[i].Name.Equals(stepsFromFeature[i].Name))
                 {
-                    UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
                     return false;
                 }
             }
