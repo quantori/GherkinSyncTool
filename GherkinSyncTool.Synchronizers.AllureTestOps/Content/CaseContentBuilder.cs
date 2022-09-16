@@ -123,33 +123,21 @@ public class CaseContentBuilder
 
     private List<Quantori.AllureTestOpsClient.Model.Step> GetSteps(Scenario scenario, IFeatureFile featureFile)
     {
-        var scenarioSteps = ExtractSteps(scenario.Steps.ToList());
+        var scenarioSteps = ExtractSteps(scenario.Steps);
 
         var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
         if (background is not null)
         {
-            var backgroundSteps = ExtractSteps(background.Steps.ToList());
+            var backgroundSteps = ExtractSteps(background.Steps);
             return backgroundSteps.Concat(scenarioSteps).ToList();
         }
 
         return scenarioSteps;
     }
 
-    private List<Quantori.AllureTestOpsClient.Model.Step> ExtractSteps(List<Step> steps)
+    private List<Quantori.AllureTestOpsClient.Model.Step> ExtractSteps(IEnumerable<Step> steps)
     {
-        var allureSteps = new List<Quantori.AllureTestOpsClient.Model.Step>();
-        foreach (var step in steps)
-        {
-            var allureStep = new Quantori.AllureTestOpsClient.Model.Step
-            {
-                Keyword = step.Keyword.Trim(),
-                Name = step.Text
-            };
-
-            allureSteps.Add(allureStep);
-        }
-
-        return allureSteps;
+        return steps.Select(step => new Quantori.AllureTestOpsClient.Model.Step { Keyword = step.Keyword.Trim(), Name = step.Text }).ToList();
     }
 
     private string ConvertToCsvTable(List<TableRow> tableRows)
