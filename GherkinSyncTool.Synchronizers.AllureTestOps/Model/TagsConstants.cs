@@ -4,5 +4,6 @@
     {
         public const string Automated = "@Automated";
         public const string Status = "@Status:";
+        public const string Reference = "@Reference:";
     }
 }

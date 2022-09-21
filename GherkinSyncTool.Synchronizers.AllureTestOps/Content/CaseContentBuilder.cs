@@ -12,10 +12,11 @@ using GherkinSyncTool.Synchronizers.AllureTestOps.Model;
 using NLog;
 using Quantori.AllureTestOpsClient.Model;
 using Refit;
-using Scenario = Gherkin.Ast.Scenario;
-using Step = Gherkin.Ast.Step;
 using AllureTestCaseStep = Quantori.AllureTestOpsClient.Model.Step;
 using AllureScenario = Quantori.AllureTestOpsClient.Model.Scenario;
+using Scenario = Gherkin.Ast.Scenario;
+using Step = Gherkin.Ast.Step;
+using Tag = Quantori.AllureTestOpsClient.Model.Tag;
 
 namespace GherkinSyncTool.Synchronizers.AllureTestOps.Content;
 
@@ -31,6 +32,7 @@ public class CaseContentBuilder
     private List<WorkflowSchema> _workflowSchemas;
     private Item _automatedWorkflowId;
     private Item _manualWorkflowId;
+    private List<Tag> _testTags;
 
     public List<WorkflowSchema> WorkflowSchemas =>
         _workflowSchemas ??= _allureClientWrapper.GetAllWorkflowSchemas(_allureTestOpsSettings.ProjectId).ToList();
@@ -42,6 +44,7 @@ public class CaseContentBuilder
         _automatedWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Automated))!.Workflow;
 
     public Item ManualWorkflow => _manualWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Manual))!.Workflow;
+    public  List<Tag> AllureTestTags => _testTags ??= _allureClientWrapper.GetAllTestTags();
 
     public CaseContentBuilder(AllureClientWrapper allureClientWrapper, Context context)
     {
@@ -61,12 +64,42 @@ public class CaseContentBuilder
                 StatusId = AddStatus(scenario, featureFile),
                 WorkflowId = AddWorkflow(scenario, featureFile),
                 Description = AddDescription(scenario, featureFile),
-                Scenario = AddScenario(scenario, featureFile)
+                Scenario = AddScenario(scenario, featureFile),
+                Tags = AddTags(scenario, featureFile)
             },
             StepsAttachments = AddStepAttachments(scenario, featureFile)
         };
 
         return createTestCaseRequestExtended;
+    }
+
+    private List<Tag> AddTags(Scenario scenario, IFeatureFile featureFile)
+    {
+        var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
+        //Remove references from tags to not duplicate with the reference field
+        allTags.RemoveAll(tag => tag.Name.Contains(TagsConstants.Reference, StringComparison.InvariantCultureIgnoreCase));
+        //Remove automation type from tags to not duplicate with the automation type field
+        allTags.RemoveAll(tag => tag.Name.Contains(TagsConstants.Automated, StringComparison.InvariantCultureIgnoreCase));
+        
+        var result = new List<Tag>();
+        if (allTags.Any())
+        {
+            foreach (var tag in allTags)
+            {
+                var tagName = tag.Name.Replace("@", "");
+                var allureTag = AllureTestTags.FirstOrDefault(t => t.Name.Equals(tagName, StringComparison.InvariantCultureIgnoreCase));
+                if (allureTag is null)
+                {
+                    var newTag = _allureClientWrapper.AddTestTags(tagName);
+                    AllureTestTags.Add(newTag);
+                    result.Add(newTag);
+                    continue;
+                }
+                result.Add(new Tag {Id = allureTag.Id, Name = tagName});
+            }
+        }
+
+        return result;
     }
 
     private Dictionary<int, ByteArrayPart> AddStepAttachments(Scenario scenario, IFeatureFile featureFile)
@@ -78,7 +111,7 @@ public class CaseContentBuilder
         {
             var backgroundStepCount = background.Steps.Count();
             var attachmentsShifted = attachments.ToDictionary(attachment => attachment.Key + backgroundStepCount, attachment => attachment.Value);
-            
+
             var backgroundAttachments = ExtractAttachments(background.Steps.ToList());
             return backgroundAttachments.Concat(attachmentsShifted).ToDictionary(pair => pair.Key, pair => pair.Value);
         }
@@ -97,13 +130,13 @@ public class CaseContentBuilder
             switch (step.Argument)
             {
                 case DocString docString:
-                    
+
                     var textBytes = Encoding.ASCII.GetBytes(docString.Content);
                     result.Add(index, new ByteArrayPart(textBytes, "Text", "text/plain"));
                     break;
-                
+
                 case DataTable table:
-                    
+
                     var csvBytes = Encoding.ASCII.GetBytes(ConvertToCsvTable(table.Rows.ToList()));
                     result.Add(index, new ByteArrayPart(csvBytes, "Table", "text/csv"));
                     break;
@@ -171,11 +204,11 @@ public class CaseContentBuilder
         if (background is not null && (!string.IsNullOrWhiteSpace(background.Name) || !string.IsNullOrWhiteSpace(background.Description)))
         {
             description.AppendLine($"**{background.Keyword}:** {background.Name}");
-            if(!string.IsNullOrWhiteSpace(background.Description)) description.AppendLine(background.Description);
+            if (!string.IsNullOrWhiteSpace(background.Description)) description.AppendLine(background.Description);
         }
 
         description.AppendLine($"**Feature file:** {featureFile.RelativePath}");
-        
+
         var examples = scenario.Examples.ToList();
 
         if (examples.Any())
@@ -210,6 +243,7 @@ public class CaseContentBuilder
         {
             table.Append($"{cell.Value}|");
         }
+
         table.AppendLine();
         table.Append("|");
         //Header delimiter

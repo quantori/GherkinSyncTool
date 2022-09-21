@@ -77,6 +77,8 @@ GherkinSyncTool can be configured in three ways. The priority corresponds to the
 | BaseDirectory | Absolute or relative to application folder path that contains *.feature files                        | Yes      |
 | TagIdPrefix   | A tag prefix that will be used for mark test scenarios as synchronized with a test management system | No       |
 
+Allure TestOps note: `TagIdPrefix` should be configured to fill the 'as_id' Allure label correctly. For example, for Specflow TagIdPrefix should be equals `@label:as_id:` It is required to not duplicate manual and automated test cases. The test run result will be attached to the correct Allure test ID.
+
 ### Formatting settings
 
 | Parameter      | Description            | Required |
