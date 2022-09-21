@@ -76,10 +76,10 @@ public class CaseContentBuilder
     private List<Tag> AddTags(Scenario scenario, IFeatureFile featureFile)
     {
         var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
-        //Remove references from tags to not duplicate with the reference field
+        //Remove tags that will duplicate existing fields
         allTags.RemoveAll(tag => tag.Name.Contains(TagsConstants.Reference, StringComparison.InvariantCultureIgnoreCase));
-        //Remove automation type from tags to not duplicate with the automation type field
         allTags.RemoveAll(tag => tag.Name.Contains(TagsConstants.Automated, StringComparison.InvariantCultureIgnoreCase));
+        allTags.RemoveAll(tag => tag.Name.Contains(TagsConstants.Status, StringComparison.InvariantCultureIgnoreCase));
         
         var result = new List<Tag>();
         if (allTags.Any())
