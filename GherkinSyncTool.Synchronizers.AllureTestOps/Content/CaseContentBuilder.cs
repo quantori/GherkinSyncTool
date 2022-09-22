@@ -33,6 +33,8 @@ public class CaseContentBuilder
     private Item _automatedWorkflowId;
     private Item _manualWorkflowId;
     private List<Tag> _testTags;
+    private List<CustomFieldSchemaContent> _customFieldSchema;
+    private Dictionary<long, List<CustomFieldItem>> _customFilesValues = new();
 
     public List<WorkflowSchema> WorkflowSchemas =>
         _workflowSchemas ??= _allureClientWrapper.GetAllWorkflowSchemas(_allureTestOpsSettings.ProjectId).ToList();
@@ -45,6 +47,7 @@ public class CaseContentBuilder
 
     public Item ManualWorkflow => _manualWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Manual))!.Workflow;
     public  List<Tag> AllureTestTags => _testTags ??= _allureClientWrapper.GetAllTestTags();
+    public  List<CustomFieldSchemaContent> CustomFieldSchema => _customFieldSchema ??= _allureClientWrapper.GetCustomFieldSchema().ToList();
 
     public CaseContentBuilder(AllureClientWrapper allureClientWrapper, Context context)
     {
@@ -65,12 +68,32 @@ public class CaseContentBuilder
                 WorkflowId = AddWorkflow(scenario, featureFile),
                 Description = AddDescription(scenario, featureFile),
                 Scenario = AddScenario(scenario, featureFile),
-                Tags = AddTags(scenario, featureFile)
+                Tags = AddTags(scenario, featureFile),
+                CustomFields = AddCustomFields(scenario, featureFile)
             },
             StepsAttachments = AddStepAttachments(scenario, featureFile)
         };
 
         return createTestCaseRequestExtended;
+    }
+
+    private List<CustomFieldItem> AddCustomFields(Scenario scenario, IFeatureFile featureFile)
+    {
+        var result = new List<CustomFieldItem>();
+        var featureField = CustomFieldSchema.FirstOrDefault(content => content.CustomField.Name.Equals("Feature"));
+        
+        
+        var values = _allureClientWrapper.GetCustomFieldValues(featureField.CustomField.Id);
+        _customFilesValues.Add(featureField.CustomField.Id, values.ToList());
+        
+        
+        
+        
+        result.Add(new CustomFieldItem()
+        {
+            CustomField = 
+
+        });
     }
 
     private List<Tag> AddTags(Scenario scenario, IFeatureFile featureFile)

@@ -31,6 +31,15 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         {
             return GetAllContent(i => _allureClient.GetTestCasesAsync(_allureTestOpsSettings.ProjectId, i).Result);
         }
+        public IEnumerable<CustomFieldSchemaContent> GetCustomFieldSchema()
+        {
+            return GetAllContent(i => _allureClient.GetCustomFieldSchemaAsync(_allureTestOpsSettings.ProjectId, i).Result);
+        }
+        
+        public IEnumerable<CustomFieldItem> GetCustomFieldValues(long customFieldId)
+        {
+            return GetAllContent(i => _allureClient.GetCustomFieldValuesAsync(customFieldId, i).Result);
+        }
 
         private void ValidateResponse(IApiResponse response)
         {

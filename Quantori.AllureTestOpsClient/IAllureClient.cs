@@ -10,6 +10,7 @@ namespace Quantori.AllureTestOpsClient
     public interface IAllureClient
     {
         #region Test case controller
+
         /// <summary>
         /// Find all test cases for specified project
         /// </summary>
@@ -45,19 +46,22 @@ namespace Quantori.AllureTestOpsClient
         /// <returns></returns>
         [Patch("/api/rs/testcase/{id}")]
         Task<IApiResponse<TestCase>> UpdateTestCaseAsync([AliasAs("id")] ulong testCaseId, [Body] TestCaseRequest updateTestCaseRequest);
-        
+
         #endregion
-        
+
         #region Status controller
+
         /// <summary>
         /// Find all statuses
         /// </summary>
         /// <returns></returns>
         [Get("/api/rs/status")]
         Task<IApiResponse<GetContentResponse<Status>>> GetStatusAsync(int? workflowId = null, int page = 0, int size = 100, string sort = null);
+
         #endregion
-        
+
         #region Workflow schema controller
+
         /// <summary>
         /// Find all workflow schemas for given project
         /// </summary>
@@ -66,9 +70,11 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="size"></param>
         /// <param name="sort"></param>
         [Get("/api/rs/workflowschema")]
-        Task<IApiResponse<GetContentResponse<WorkflowSchema>>> GetWorkflowSchemaAsync(int projectId, int page = 0, int size = 100, string sort = null);
+        Task<IApiResponse<GetContentResponse<WorkflowSchema>>>
+            GetWorkflowSchemaAsync(int projectId, int page = 0, int size = 100, string sort = null);
+
         #endregion
-        
+
         #region Workflow controller
 
         /// <summary>
@@ -80,8 +86,9 @@ namespace Quantori.AllureTestOpsClient
         /// <returns></returns>
         [Get("/api/rs/workflow")]
         Task<IApiResponse<GetContentResponse<WorkflowContent>>> GetWorkflowAsync(int page = 0, int size = 100, string sort = null);
+
         #endregion
-        
+
         #region Test case attachment controller
 
         /// <summary>
@@ -90,29 +97,29 @@ namespace Quantori.AllureTestOpsClient
         [Multipart]
         [Post("/api/rs/testcase/attachment")]
         Task<IApiResponse<List<Attachment>>> UploadTestCaseAttachmentAsync(long testCaseId, [AliasAs("file")] IEnumerable<ByteArrayPart> attachments);
-        
+
         /// <summary>
         /// Delete test case attachment
         /// </summary>
         [Delete("/api/rs/testcase/attachment/{id}")]
         Task<IApiResponse> DeleteTestCaseAttachmentAsync([AliasAs("id")] long testCaseId);
-        
+
         /// <summary>
         /// Delete test case attachment
         /// </summary>
         [Get("/api/rs/testcase/attachment/{id}/content")]
         Task<IApiResponse<string>> GetTestCaseAttachmentContentAsync([AliasAs("id")] long attachmentId);
-        
+
         #endregion
-        
+
         #region Test case scenario controller
-        
+
         /// <summary>
         /// Update scenario for test case
         /// </summary>
         [Post("/api/rs/testcase/{id}/scenario")]
         Task<IApiResponse<Scenario>> UpdateTestCaseScenarioAsync([AliasAs("id")] long testCaseId, [Body] Scenario scenario);
-        
+
         /// <summary>
         /// Delete scenario for test case
         /// </summary>
@@ -120,22 +127,52 @@ namespace Quantori.AllureTestOpsClient
         Task<IApiResponse<Scenario>> DeleteTestCaseScenarioAsync([AliasAs("id")] long testCaseId);
 
         #endregion
-        
+
         #region Test tag controller
-        
+
         /// <summary>
         /// Find all test tags
         /// </summary>
         /// <returns></returns>
         [Get("/api/rs/tag")]
         Task<IApiResponse<List<Tag>>> GetTagsAsync();
-        
+
         /// <summary>
         /// Create a new test tag
         /// </summary>
         /// <returns></returns>
         [Post("/api/rs/tag")]
         Task<IApiResponse<Tag>> CreateTagAsync([Body] Tag tag);
+
+        #endregion
+
+        #region Custom field schema controller
+        
+        /// <summary>
+        /// Find all custom field schemas for given project
+        /// </summary>
+        /// <param name="projectId"></param>
+        /// <param name="page">Zero-based page index (0..N)</param>
+        /// <param name="size">The size of the page to be returned</param>
+        /// <param name="sort">Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.</param>
+        /// <returns></returns>
+        [Get("/api/rs/testcase")]
+        Task<IApiResponse<GetContentResponse<CustomFieldSchemaContent>>> GetCustomFieldSchemaAsync(int projectId, int page = 0, int size = 100, string sort = null);
+
+        #endregion
+        
+        #region Custom field value controller
+
+        /// <summary>
+        /// Find all custom field values
+        /// </summary>
+        /// <param name="customFieldId"></param>
+        /// <param name="page">Zero-based page index (0..N)</param>
+        /// <param name="size">The size of the page to be returned</param>
+        /// <param name="sort">Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.</param>
+        /// <returns></returns>
+        [Get("/api/rs/testcase")]
+        Task<IApiResponse<GetContentResponse<CustomFieldItem>>> GetCustomFieldValuesAsync(long customFieldId, int page = 0, int size = 100, string sort = null);
 
         #endregion
     }
