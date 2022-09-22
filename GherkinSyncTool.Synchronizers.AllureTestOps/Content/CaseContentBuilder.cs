@@ -131,6 +131,41 @@ public class CaseContentBuilder
         }
     }
 
+    private List<Tag> AddTags(Scenario scenario, IFeatureFile featureFile)
+    {
+        var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
+        //Remove tags that will duplicate existing fields
+        RemoveTags(allTags, TagsConstants.Reference, TagsConstants.Automated, TagsConstants.Status);
+        
+        var result = new List<Tag>();
+        if (allTags.Any())
+        {
+            foreach (var tag in allTags)
+            {
+                var tagName = tag.Name.Replace("@", "");
+                var allureTag = AllureTestTags.FirstOrDefault(t => t.Name.Equals(tagName, StringComparison.InvariantCultureIgnoreCase));
+                if (allureTag is null)
+                {
+                    var newTag = _allureClientWrapper.AddTestTags(tagName);
+                    AllureTestTags.Add(newTag);
+                    result.Add(newTag);
+                    continue;
+                }
+                result.Add(new Tag {Id = allureTag.Id, Name = tagName});
+            }
+        }
+
+        return result;
+    }
+
+    private void RemoveTags(List<Gherkin.Ast.Tag> allTags, params string[] tagsToRemove)
+    {
+        foreach (var tagToRemove in tagsToRemove)
+        {
+            allTags.RemoveAll(tag => tag.Name.Contains(tagToRemove, StringComparison.InvariantCultureIgnoreCase));    
+        }
+    }
+
     private Dictionary<int, ByteArrayPart> AddStepAttachments(Scenario scenario, IFeatureFile featureFile)
     {
         var attachments = ExtractAttachments(scenario.Steps.ToList());
