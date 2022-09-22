@@ -77,9 +77,7 @@ public class CaseContentBuilder
     {
         var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
         //Remove tags that will duplicate existing fields
-        RemoveTag(allTags,TagsConstants.Reference);
-        RemoveTag(allTags,TagsConstants.Automated);
-        RemoveTag(allTags,TagsConstants.Status);
+        RemoveTags(allTags, TagsConstants.Reference, TagsConstants.Automated, TagsConstants.Status);
         
         var result = new List<Tag>();
         if (allTags.Any())
@@ -102,9 +100,12 @@ public class CaseContentBuilder
         return result;
     }
 
-    private void RemoveTag(List<Gherkin.Ast.Tag> allTags, string tagToRemove)
+    private void RemoveTags(List<Gherkin.Ast.Tag> allTags, params string[] tagsToRemove)
     {
-        allTags.RemoveAll(tag => tag.Name.Contains(tagToRemove, StringComparison.InvariantCultureIgnoreCase));
+        foreach (var tagToRemove in tagsToRemove)
+        {
+            allTags.RemoveAll(tag => tag.Name.Contains(tagToRemove, StringComparison.InvariantCultureIgnoreCase));    
+        }
     }
 
     private Dictionary<int, ByteArrayPart> AddStepAttachments(Scenario scenario, IFeatureFile featureFile)
