@@ -215,6 +215,20 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
             ValidateResponse(response);
         }
+        
+        public List<Tag> GetAllTestTags()
+        {
+            var response = _allureClient.GetTagsAsync().Result;
+            ValidateResponse(response);
+            return response.Content;
+        }
+        
+        public Tag AddTestTags(string name)
+        {
+            var response = _allureClient.CreateTagAsync(new Tag {Name = name}).Result;
+            ValidateResponse(response);
+            return response.Content;
+        }
 
         private void UpdateTestCaseStepAttachments(CreateTestCaseRequestExtended caseToUpdate, TestCaseOverview testCaseOverview)
         {
@@ -236,6 +250,13 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             if (!currentCase.Automated.Equals(caseToUpdate.CreateTestCaseRequest.Automated)) return false;
             if (!currentCase.Status.Id.Equals(caseToUpdate.CreateTestCaseRequest.StatusId)) return false;
             if (!currentCase.Description.Equals(caseToUpdate.CreateTestCaseRequest.Description)) return false;
+            
+            var caseToUpdateTagIds = caseToUpdate.CreateTestCaseRequest.Tags.Select(tag => tag.Id).ToList();
+            var currentCaseTagIds = currentCase.Tags.Select(tag => tag.Id).ToList();
+
+            if (currentCaseTagIds.Count != caseToUpdateTagIds.Count) return false;
+            if (currentCaseTagIds.Except(caseToUpdateTagIds).Any()) return false;
+
             return true;
         }
 

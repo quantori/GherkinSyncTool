@@ -57,7 +57,6 @@ namespace Quantori.AllureTestOpsClient
         Task<IApiResponse<GetContentResponse<Status>>> GetStatusAsync(int? workflowId = null, int page = 0, int size = 100, string sort = null);
         #endregion
         
-        
         #region Workflow schema controller
         /// <summary>
         /// Find all workflow schemas for given project
@@ -71,10 +70,10 @@ namespace Quantori.AllureTestOpsClient
         #endregion
         
         #region Workflow controller
+
         /// <summary>
         /// Find all workflow
         /// </summary>
-        /// <param name="projectId"></param>
         /// <param name="page"></param>
         /// <param name="size"></param>
         /// <param name="sort"></param>
@@ -119,6 +118,24 @@ namespace Quantori.AllureTestOpsClient
         /// </summary>
         [Delete("/api/rs/testcase/{id}/scenario")]
         Task<IApiResponse<Scenario>> DeleteTestCaseScenarioAsync([AliasAs("id")] long testCaseId);
+
+        #endregion
+        
+        #region Test tag controller
+        
+        /// <summary>
+        /// Find all test tags
+        /// </summary>
+        /// <returns></returns>
+        [Get("/api/rs/tag")]
+        Task<IApiResponse<List<Tag>>> GetTagsAsync();
+        
+        /// <summary>
+        /// Create a new test tag
+        /// </summary>
+        /// <returns></returns>
+        [Post("/api/rs/tag")]
+        Task<IApiResponse<Tag>> CreateTagAsync([Body] Tag tag);
 
         #endregion
     }
