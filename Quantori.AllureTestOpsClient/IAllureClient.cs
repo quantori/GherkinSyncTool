@@ -156,7 +156,7 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="size">The size of the page to be returned</param>
         /// <param name="sort">Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.</param>
         /// <returns></returns>
-        [Get("/api/rs/testcase")]
+        [Get("/api/rs/cfschema")]
         Task<IApiResponse<GetContentResponse<CustomFieldSchemaContent>>> GetCustomFieldSchemaAsync(int projectId, int page = 0, int size = 100, string sort = null);
 
         #endregion
@@ -171,8 +171,14 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="size">The size of the page to be returned</param>
         /// <param name="sort">Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.</param>
         /// <returns></returns>
-        [Get("/api/rs/testcase")]
+        [Get("/api/rs/cfv")]
         Task<IApiResponse<GetContentResponse<CustomFieldItem>>> GetCustomFieldValuesAsync(long customFieldId, int page = 0, int size = 100, string sort = null);
+        
+        /// <summary>
+        /// Create a new custom field value
+        /// </summary>
+        [Post("/api/rs/cfv")]
+        Task<IApiResponse<CustomFieldItem>> CreateCustomFieldValueAsync([Body]CustomFieldItem customFieldItem);
 
         #endregion
     }

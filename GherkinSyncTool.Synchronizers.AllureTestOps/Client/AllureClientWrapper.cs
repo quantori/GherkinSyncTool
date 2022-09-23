@@ -40,6 +40,13 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         {
             return GetAllContent(i => _allureClient.GetCustomFieldValuesAsync(customFieldId, i).Result);
         }
+        
+        public CustomFieldItem CreateNewCustomFieldValue(CustomFieldItem customFieldItem)
+        {
+            var response = _allureClient.CreateCustomFieldValueAsync(customFieldItem).Result;
+            ValidateResponse(response);
+            return response.Content;
+        }
 
         private void ValidateResponse(IApiResponse response)
         {
@@ -56,7 +63,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             }
         }
 
-        public TestCase AddTestCase(CreateTestCaseRequest caseRequest)
+        public TestCase CreateTestCase(CreateTestCaseRequest caseRequest)
         {
             var response = _allureClient.CreateTestCaseAsync(caseRequest).Result;
             ValidateResponse(response);

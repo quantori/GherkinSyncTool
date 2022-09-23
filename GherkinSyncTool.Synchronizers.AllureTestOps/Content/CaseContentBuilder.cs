@@ -46,8 +46,8 @@ public class CaseContentBuilder
         _automatedWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Automated))!.Workflow;
 
     public Item ManualWorkflow => _manualWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Manual))!.Workflow;
-    public  List<Tag> AllureTestTags => _testTags ??= _allureClientWrapper.GetAllTestTags();
-    public  List<CustomFieldSchemaContent> CustomFieldSchema => _customFieldSchema ??= _allureClientWrapper.GetCustomFieldSchema().ToList();
+    public List<Tag> AllureTestTags => _testTags ??= _allureClientWrapper.GetAllTestTags();
+    public List<CustomFieldSchemaContent> CustomFieldSchema => _customFieldSchema ??= _allureClientWrapper.GetCustomFieldSchema().ToList();
 
     public CaseContentBuilder(AllureClientWrapper allureClientWrapper, Context context)
     {
@@ -81,19 +81,38 @@ public class CaseContentBuilder
     {
         var result = new List<CustomFieldItem>();
         var featureField = CustomFieldSchema.FirstOrDefault(content => content.CustomField.Name.Equals("Feature"));
-        
-        
+
         var values = _allureClientWrapper.GetCustomFieldValues(featureField.CustomField.Id);
-        _customFilesValues.Add(featureField.CustomField.Id, values.ToList());
-        
-        
-        
-        
-        result.Add(new CustomFieldItem()
+        if (!_customFilesValues.ContainsKey(featureField.CustomField.Id))
         {
-            CustomField = 
+            _customFilesValues.Add(featureField.CustomField.Id, values.ToList());
+        }
 
+        var value = _customFilesValues[featureField.CustomField.Id].FirstOrDefault(item => item.Name.Equals(featureFile.Document.Feature.Name));
+        if (value is null)
+        {
+            var customFieldValue = _allureClientWrapper.CreateNewCustomFieldValue(new CustomFieldItem()
+            {
+                Name = featureFile.Document.Feature.Name,
+                CustomField = new Item
+                {
+                    Id = featureField.CustomField.Id
+                }
+            });
+            value = customFieldValue;
+            _customFilesValues[featureField.CustomField.Id].Add(value);
+        }
+
+        result.Add(new CustomFieldItem
+        {
+            Id = value.Id,
+            Name = value.Name,
+            CustomField = new Item
+            {
+                Id = featureField.CustomField.Id
+            }
         });
+        return result;
     }
 
     private List<Tag> AddTags(Scenario scenario, IFeatureFile featureFile)
@@ -101,7 +120,7 @@ public class CaseContentBuilder
         var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
         //Remove tags that will duplicate existing fields
         RemoveTags(allTags, TagsConstants.Reference, TagsConstants.Automated, TagsConstants.Status);
-        
+
         var result = new List<Tag>();
         if (allTags.Any())
         {
@@ -116,7 +135,8 @@ public class CaseContentBuilder
                     result.Add(newTag);
                     continue;
                 }
-                result.Add(new Tag {Id = allureTag.Id, Name = tagName});
+
+                result.Add(new Tag { Id = allureTag.Id, Name = tagName });
             }
         }
 
@@ -127,42 +147,7 @@ public class CaseContentBuilder
     {
         foreach (var tagToRemove in tagsToRemove)
         {
-            allTags.RemoveAll(tag => tag.Name.Contains(tagToRemove, StringComparison.InvariantCultureIgnoreCase));    
-        }
-    }
-
-    private List<Tag> AddTags(Scenario scenario, IFeatureFile featureFile)
-    {
-        var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
-        //Remove tags that will duplicate existing fields
-        RemoveTags(allTags, TagsConstants.Reference, TagsConstants.Automated, TagsConstants.Status);
-        
-        var result = new List<Tag>();
-        if (allTags.Any())
-        {
-            foreach (var tag in allTags)
-            {
-                var tagName = tag.Name.Replace("@", "");
-                var allureTag = AllureTestTags.FirstOrDefault(t => t.Name.Equals(tagName, StringComparison.InvariantCultureIgnoreCase));
-                if (allureTag is null)
-                {
-                    var newTag = _allureClientWrapper.AddTestTags(tagName);
-                    AllureTestTags.Add(newTag);
-                    result.Add(newTag);
-                    continue;
-                }
-                result.Add(new Tag {Id = allureTag.Id, Name = tagName});
-            }
-        }
-
-        return result;
-    }
-
-    private void RemoveTags(List<Gherkin.Ast.Tag> allTags, params string[] tagsToRemove)
-    {
-        foreach (var tagToRemove in tagsToRemove)
-        {
-            allTags.RemoveAll(tag => tag.Name.Contains(tagToRemove, StringComparison.InvariantCultureIgnoreCase));    
+            allTags.RemoveAll(tag => tag.Name.Contains(tagToRemove, StringComparison.InvariantCultureIgnoreCase));
         }
     }
 
