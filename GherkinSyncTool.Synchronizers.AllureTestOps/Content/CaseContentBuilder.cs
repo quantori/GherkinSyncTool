@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -80,8 +81,51 @@ public class CaseContentBuilder
     private List<CustomFieldItem> AddCustomFields(Scenario scenario, IFeatureFile featureFile)
     {
         var result = new List<CustomFieldItem>();
-        var featureField = CustomFieldSchema.FirstOrDefault(content => content.CustomField.Name.Equals("Feature"));
+        AddFeatureCustomFiled(featureFile, result);
+        AddEpicCustomFiled(featureFile, result);
+        return result;
+    }
 
+    private void AddEpicCustomFiled(IFeatureFile featureFile, List<CustomFieldItem> result)
+    {
+        var epicField = CustomFieldSchema.FirstOrDefault(content => content.CustomField.Name.Equals("Epic"));
+        var values = _allureClientWrapper.GetCustomFieldValues(epicField.CustomField.Id);
+        if (!_customFilesValues.ContainsKey(epicField.CustomField.Id))
+        {
+            _customFilesValues.Add(epicField.CustomField.Id, values.ToList());
+        }
+
+        var epic = Path.GetDirectoryName(featureFile.RelativePath);
+
+        var value = _customFilesValues[epicField.CustomField.Id].FirstOrDefault(item => item.Name.Equals(epic));
+        if (value is null)
+        {
+            var customFieldValue = _allureClientWrapper.CreateNewCustomFieldValue(new CustomFieldItem()
+            {
+                Name = epic,
+                CustomField = new Item
+                {
+                    Id = epicField.CustomField.Id
+                }
+            });
+            value = customFieldValue;
+            _customFilesValues[epicField.CustomField.Id].Add(value);
+        }
+        
+        result.Add(new CustomFieldItem
+        {
+            Id = value.Id,
+            Name = value.Name,
+            CustomField = new Item
+            {
+                Id = value.CustomField.Id
+            }
+        });
+    }
+
+    private void AddFeatureCustomFiled(IFeatureFile featureFile, List<CustomFieldItem> result)
+    {
+        var featureField = CustomFieldSchema.FirstOrDefault(content => content.CustomField.Name.Equals("Feature"));
         var values = _allureClientWrapper.GetCustomFieldValues(featureField.CustomField.Id);
         if (!_customFilesValues.ContainsKey(featureField.CustomField.Id))
         {
@@ -102,17 +146,16 @@ public class CaseContentBuilder
             value = customFieldValue;
             _customFilesValues[featureField.CustomField.Id].Add(value);
         }
-
+        
         result.Add(new CustomFieldItem
         {
             Id = value.Id,
             Name = value.Name,
             CustomField = new Item
             {
-                Id = featureField.CustomField.Id
+                Id = value.CustomField.Id
             }
         });
-        return result;
     }
 
     private List<Tag> AddTags(Scenario scenario, IFeatureFile featureFile)
