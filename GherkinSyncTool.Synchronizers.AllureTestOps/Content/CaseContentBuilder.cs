@@ -83,14 +83,12 @@ public class CaseContentBuilder
         var result = new List<CustomFieldItem>();
         AddFeatureCustomFiled(featureFile, result);
         AddEpicCustomFiled(featureFile, result);
-        AddComponentCustomFiled(featureFile, scenario, result);
+        AddComponentCustomField(featureFile, scenario, result);
         return result;
     }
 
-    private void AddComponentCustomFiled(IFeatureFile featureFile, Scenario scenario, List<CustomFieldItem> result)
+    private void AddComponentCustomField(IFeatureFile featureFile, Scenario scenario, List<CustomFieldItem> result)
     {
-        var settingsComponent = _allureTestOpsSettings.Component;
-
         var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
         var componentTag = allTags.LastOrDefault(tag => tag.Name.Contains(TagsConstants.Component, StringComparison.InvariantCultureIgnoreCase));
 
@@ -106,7 +104,8 @@ public class CaseContentBuilder
             
             return;
         }
-
+        
+        var settingsComponent = _allureTestOpsSettings.Component;
         if (settingsComponent is not null)
         {
             var componentField = GetField("Component");
