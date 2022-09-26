@@ -97,7 +97,13 @@ public class CaseContentBuilder
         if (componentTag is not null)
         {
             var componentField = GetField("Component");
-            AddCustomFiled(result, componentField, componentTag.Name.Replace(TagsConstants.Component, ""));
+
+            var componentValues = componentTag.Name.Replace(TagsConstants.Component, "").Split(",");
+            foreach (var componentValue in componentValues)
+            {
+                AddCustomFiled(result, componentField, componentValue);    
+            }
+            
             return;
         }
 
