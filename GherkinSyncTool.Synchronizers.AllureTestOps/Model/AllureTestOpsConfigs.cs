@@ -42,5 +42,6 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Model
         public string AccessToken { get; set; }
         public int ProjectId { get; set; } = -1;
         public string GherkinSyncToolId { get; set; }
+        public string Component { get; set; }
     }
 }

@@ -122,16 +122,18 @@ Allure TestOps note: `TagIdPrefix` should be configured to fill the 'as_id' Allu
 ### Allure TestOps settings
 
 | Parameter         | Description                                                                       | Required |
-|-------------------|-----------------------------------------------------------------------------------| :------: |
-| BaseUrl           | Azure DevOps URL address                                                          | Yes      |
-| AccessToken       | API access token                                                                  | Yes      |
-| ProjectId         | ID of a project that will be used for synchronization                             | Yes      |
-| GherkinSyncToolId | ID for isolating usage of multiple GherkinSyncTools in one test management system | Yes      |
+|-------------------|-----------------------------------------------------------------------------------|:-------:|
+| BaseUrl           | Azure DevOps URL address                                                          |   Yes   |
+| AccessToken       | API access token                                                                  |   Yes   |
+| ProjectId         | ID of a project that will be used for synchronization                             |   Yes   |
+| GherkinSyncToolId | ID for isolating usage of multiple GherkinSyncTools in one test management system |   Yes   |
+| Component         | Set component field                                                               |   No    |
 
 #### Allure Tags
 
 - `@Status:Draft` a test case status will be changed to "Draft".
 - `@Automated` a test case will be marked as automated.
+- `@Component:Frontend` the "Component" field will bee set as "Frontend".
 
 Example:
 ```

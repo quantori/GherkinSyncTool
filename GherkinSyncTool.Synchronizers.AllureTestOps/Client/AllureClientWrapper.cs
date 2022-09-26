@@ -272,7 +272,10 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
             if (currentCaseTagIds.Count != caseToUpdateTagIds.Count) return false;
             if (currentCaseTagIds.Except(caseToUpdateTagIds).Any()) return false;
-
+            
+            if (currentCase.CustomFields.Count != caseToUpdate.CreateTestCaseRequest.CustomFields.Count) return false;
+            if (currentCase.CustomFields.Select(item => item.Name).Except(caseToUpdate.CreateTestCaseRequest.CustomFields.Select(item => item.Name)).Any()) return false;
+            
             return true;
         }
 
