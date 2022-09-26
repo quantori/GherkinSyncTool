@@ -35,7 +35,7 @@ public class CaseContentBuilder
     private Item _manualWorkflowId;
     private List<Tag> _testTags;
     private List<CustomFieldSchemaContent> _customFieldSchema;
-    private Dictionary<long, List<CustomFieldItem>> _customFilesValues = new();
+    private Dictionary<long, List<CustomFieldItem>> _customFieldsValues = new();
 
     public List<WorkflowSchema> WorkflowSchemas =>
         _workflowSchemas ??= _allureClientWrapper.GetAllWorkflowSchemas(_allureTestOpsSettings.ProjectId).ToList();
@@ -99,7 +99,7 @@ public class CaseContentBuilder
             var componentValues = componentTag.Name.Replace(TagsConstants.Component, "").Split(",");
             foreach (var componentValue in componentValues)
             {
-                AddCustomFiled(result, componentField, componentValue);    
+                AddCustomField(result, componentField, componentValue);    
             }
             
             return;
@@ -109,7 +109,7 @@ public class CaseContentBuilder
         if (settingsComponent is not null)
         {
             var componentField = GetField("Component");
-            AddCustomFiled(result, componentField, settingsComponent);
+            AddCustomField(result, componentField, settingsComponent);
         }
     }
 
@@ -126,17 +126,17 @@ public class CaseContentBuilder
 
         var values = _allureClientWrapper.GetCustomFieldValues(componentField.CustomField.Id);
 
-        if (!_customFilesValues.ContainsKey(componentField.CustomField.Id))
+        if (!_customFieldsValues.ContainsKey(componentField.CustomField.Id))
         {
-            _customFilesValues.Add(componentField.CustomField.Id, values.ToList());
+            _customFieldsValues.Add(componentField.CustomField.Id, values.ToList());
         }
 
         return componentField;
     }
 
-    private void AddCustomFiled(List<CustomFieldItem> result, CustomFieldSchemaContent customField, string cfValue)
+    private void AddCustomField(List<CustomFieldItem> result, CustomFieldSchemaContent customField, string cfValue)
     {
-        var value = _customFilesValues[customField.CustomField.Id].FirstOrDefault(item => item.Name.Equals(cfValue));
+        var value = _customFieldsValues[customField.CustomField.Id].FirstOrDefault(item => item.Name.Equals(cfValue));
         if (value is null)
         {
             var customFieldValue = _allureClientWrapper.CreateNewCustomFieldValue(new CustomFieldItem()
@@ -148,7 +148,7 @@ public class CaseContentBuilder
                 }
             });
             value = customFieldValue;
-            _customFilesValues[customField.CustomField.Id].Add(value);
+            _customFieldsValues[customField.CustomField.Id].Add(value);
         }
 
         result.Add(new CustomFieldItem
@@ -166,20 +166,20 @@ public class CaseContentBuilder
     {
         var epicField = GetField("Epic");
         var values = _allureClientWrapper.GetCustomFieldValues(epicField.CustomField.Id);
-        if (!_customFilesValues.ContainsKey(epicField.CustomField.Id))
+        if (!_customFieldsValues.ContainsKey(epicField.CustomField.Id))
         {
-            _customFilesValues.Add(epicField.CustomField.Id, values.ToList());
+            _customFieldsValues.Add(epicField.CustomField.Id, values.ToList());
         }
 
         var epic = Path.GetDirectoryName(featureFile.RelativePath);
 
-        AddCustomFiled(result, epicField, epic);
+        AddCustomField(result, epicField, epic);
     }
 
     private void AddFeatureCustomFiled(IFeatureFile featureFile, List<CustomFieldItem> result)
     {
         var featureField = GetField("Feature");
-        AddCustomFiled(result, featureField, featureFile.Document.Feature.Name);
+        AddCustomField(result, featureField, featureFile.Document.Feature.Name);
     }
 
     private List<Tag> AddTags(Scenario scenario, IFeatureFile featureFile)
