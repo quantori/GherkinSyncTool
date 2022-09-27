@@ -83,39 +83,50 @@ public class CaseContentBuilder
         var result = new List<CustomFieldItem>();
         AddFeatureCustomFiled(featureFile, result);
         AddEpicCustomFiled(featureFile, result);
-        AddComponentCustomField(featureFile, scenario, result);
+        AddCustomFieldsFromTags(featureFile, scenario, result);
         return result;
     }
 
-    private void AddComponentCustomField(IFeatureFile featureFile, Scenario scenario, List<CustomFieldItem> result)
+    private void AddCustomFieldsFromTags(IFeatureFile featureFile, Scenario scenario, List<CustomFieldItem> result)
     {
+        var customFieldsSettings = _allureTestOpsSettings.CustomFields;
+        if(customFieldsSettings is null) return;
+        
         var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
-        var componentTag = allTags.LastOrDefault(tag => tag.Name.Contains(TagsConstants.Component, StringComparison.InvariantCultureIgnoreCase));
-
-        if (componentTag is not null)
+        foreach (var customFieldsSetting in customFieldsSettings)
         {
-            var componentField = GetField("Component");
-
-            var componentValues = componentTag.Name.Replace(TagsConstants.Component, "").Split(",");
-            foreach (var componentValue in componentValues)
+            if (allTags.Any())
             {
-                AddCustomField(result, componentField, componentValue);    
+                var fieldTag = allTags.LastOrDefault(tag => tag.Name.Contains($"@{customFieldsSetting.Name}", StringComparison.InvariantCultureIgnoreCase));
+
+                if (fieldTag is not null)
+                {
+                    var customField = GetField(customFieldsSetting.Name);
+                    if(customField is null) continue;
+
+                    var cfValues = fieldTag.Name.Replace($"@{customFieldsSetting.Name}:", "").Split(",");
+                    foreach (var cfValue in cfValues)
+                    {
+                        AddCustomField(result, customField, cfValue);    
+                    }
+            
+                    continue;
+                }
             }
             
-            return;
-        }
-        
-        var settingsComponent = _allureTestOpsSettings.Component;
-        if (settingsComponent is not null)
-        {
-            var componentField = GetField("Component");
-            AddCustomField(result, componentField, settingsComponent);
+            if (customFieldsSetting.Value is not null)
+            {
+                var customField = GetField(customFieldsSetting.Name);
+                if(customField is null) continue;
+                AddCustomField(result, customField, customFieldsSetting.Value);
+            }
+            
         }
     }
 
     private CustomFieldSchemaContent GetField(string fieldName)
     {
-        var componentField = CustomFieldSchema.FirstOrDefault(content => content.CustomField.Name.Equals(fieldName));
+        var componentField = CustomFieldSchema.FirstOrDefault(content => content.Key.Equals(fieldName, StringComparison.InvariantCultureIgnoreCase));
 
         if (componentField is null)
         {
@@ -186,7 +197,14 @@ public class CaseContentBuilder
     {
         var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
         //Remove tags that will duplicate existing fields
-        RemoveTags(allTags, TagsConstants.Reference, TagsConstants.Automated, TagsConstants.Status, TagsConstants.Component);
+        var tagsToRemove = new List<string>
+        {
+            TagsConstants.Reference,
+            TagsConstants.Automated,
+            TagsConstants.Status
+        };
+        tagsToRemove.AddRange(_allureTestOpsSettings.CustomFields.Select(field => field.Name));
+        RemoveTags(allTags, tagsToRemove);
 
         var result = new List<Tag>();
         if (allTags.Any())
@@ -210,7 +228,7 @@ public class CaseContentBuilder
         return result;
     }
 
-    private void RemoveTags(List<Gherkin.Ast.Tag> allTags, params string[] tagsToRemove)
+    private void RemoveTags(List<Gherkin.Ast.Tag> allTags, IEnumerable<string> tagsToRemove)
     {
         foreach (var tagToRemove in tagsToRemove)
         {

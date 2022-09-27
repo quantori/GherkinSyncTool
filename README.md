@@ -128,13 +128,13 @@ The test run result will be attached to the correct Allure test ID.
 
 ### Allure TestOps settings
 
-| Parameter         | Description                                                                       | Required |
-|-------------------|-----------------------------------------------------------------------------------|:-------:|
-| BaseUrl           | Azure DevOps URL address                                                          |   Yes   |
-| AccessToken       | API access token                                                                  |   Yes   |
-| ProjectId         | ID of a project that will be used for synchronization                             |   Yes   |
-| GherkinSyncToolId | ID for isolating usage of multiple GherkinSyncTools in one test management system |   Yes   |
-| Component         | Set component field                                                               |   No    |
+| Parameter         | Description                                                                       | Required  |
+|-------------------|-----------------------------------------------------------------------------------|:---------:|
+| BaseUrl           | Azure DevOps URL address                                                          |    Yes    |
+| AccessToken       | API access token                                                                  |    Yes    |
+| ProjectId         | ID of a project that will be used for synchronization                             |    Yes    |
+| GherkinSyncToolId | ID for isolating usage of multiple GherkinSyncTools in one test management system |    Yes    |
+| CustomFields      | Set custom fields                                                                 |    No     |
 
 #### Allure Tags
 
@@ -147,6 +147,7 @@ Example:
 ```
 @Automated
 @Status:Draft
+@Component:Auth
 @tc:235
 Scenario: Test case example
   Given prepare sustem
