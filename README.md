@@ -140,7 +140,7 @@ The test run result will be attached to the correct Allure test ID.
 
 - `@Status:Draft` a test case status will be changed to "Draft".
 - `@Automated` a test case will be marked as automated.
-- `@Component:Frontend` the "Component" field will bee set as "Frontend".
+- `@Component:Frontend` the "Component" field will be set as "Frontend".
 
 Example:
 
