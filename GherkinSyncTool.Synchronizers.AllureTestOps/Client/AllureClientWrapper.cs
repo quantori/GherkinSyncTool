@@ -31,6 +31,22 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         {
             return GetAllContent(i => _allureClient.GetTestCasesAsync(_allureTestOpsSettings.ProjectId, i).Result);
         }
+        public IEnumerable<CustomFieldSchemaContent> GetCustomFieldSchema()
+        {
+            return GetAllContent(i => _allureClient.GetCustomFieldSchemaAsync(_allureTestOpsSettings.ProjectId, i).Result);
+        }
+        
+        public IEnumerable<CustomFieldItem> GetCustomFieldValues(long customFieldId)
+        {
+            return GetAllContent(i => _allureClient.GetCustomFieldValuesAsync(customFieldId, i).Result);
+        }
+        
+        public CustomFieldItem CreateNewCustomFieldValue(CustomFieldItem customFieldItem)
+        {
+            var response = _allureClient.CreateCustomFieldValueAsync(customFieldItem).Result;
+            ValidateResponse(response);
+            return response.Content;
+        }
 
         private void ValidateResponse(IApiResponse response)
         {
@@ -47,7 +63,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             }
         }
 
-        public TestCase AddTestCase(CreateTestCaseRequest caseRequest)
+        public TestCase CreateTestCase(CreateTestCaseRequest caseRequest)
         {
             var response = _allureClient.CreateTestCaseAsync(caseRequest).Result;
             ValidateResponse(response);
@@ -256,7 +272,10 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
             if (currentCaseTagIds.Count != caseToUpdateTagIds.Count) return false;
             if (currentCaseTagIds.Except(caseToUpdateTagIds).Any()) return false;
-
+            
+            if (currentCase.CustomFields.Count != caseToUpdate.CreateTestCaseRequest.CustomFields.Count) return false;
+            if (currentCase.CustomFields.Select(item => item.Name).Except(caseToUpdate.CreateTestCaseRequest.CustomFields.Select(item => item.Name)).Any()) return false;
+            
             return true;
         }
 

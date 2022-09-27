@@ -109,7 +109,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
             TestCase newTestCase = null;
             try
             {
-                newTestCase = _allureClientWrapper.AddTestCase(caseRequestExtended.CreateTestCaseRequest);
+                newTestCase = _allureClientWrapper.CreateTestCase(caseRequestExtended.CreateTestCaseRequest);
             }
             catch (AllureException e)
             {

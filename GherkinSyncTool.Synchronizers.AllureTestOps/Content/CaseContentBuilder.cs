@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -33,6 +34,8 @@ public class CaseContentBuilder
     private Item _automatedWorkflowId;
     private Item _manualWorkflowId;
     private List<Tag> _testTags;
+    private List<CustomFieldSchemaContent> _customFieldSchema;
+    private Dictionary<long, List<CustomFieldItem>> _customFieldsValues = new();
 
     public List<WorkflowSchema> WorkflowSchemas =>
         _workflowSchemas ??= _allureClientWrapper.GetAllWorkflowSchemas(_allureTestOpsSettings.ProjectId).ToList();
@@ -44,7 +47,8 @@ public class CaseContentBuilder
         _automatedWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Automated))!.Workflow;
 
     public Item ManualWorkflow => _manualWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Manual))!.Workflow;
-    public  List<Tag> AllureTestTags => _testTags ??= _allureClientWrapper.GetAllTestTags();
+    public List<Tag> AllureTestTags => _testTags ??= _allureClientWrapper.GetAllTestTags();
+    public List<CustomFieldSchemaContent> CustomFieldSchema => _customFieldSchema ??= _allureClientWrapper.GetCustomFieldSchema().ToList();
 
     public CaseContentBuilder(AllureClientWrapper allureClientWrapper, Context context)
     {
@@ -65,7 +69,8 @@ public class CaseContentBuilder
                 WorkflowId = AddWorkflow(scenario, featureFile),
                 Description = AddDescription(scenario, featureFile),
                 Scenario = AddScenario(scenario, featureFile),
-                Tags = AddTags(scenario, featureFile)
+                Tags = AddTags(scenario, featureFile),
+                CustomFields = AddCustomFields(scenario, featureFile)
             },
             StepsAttachments = AddStepAttachments(scenario, featureFile)
         };
@@ -73,12 +78,116 @@ public class CaseContentBuilder
         return createTestCaseRequestExtended;
     }
 
+    private List<CustomFieldItem> AddCustomFields(Scenario scenario, IFeatureFile featureFile)
+    {
+        var result = new List<CustomFieldItem>();
+        AddFeatureCustomFiled(featureFile, result);
+        AddEpicCustomFiled(featureFile, result);
+        AddComponentCustomField(featureFile, scenario, result);
+        return result;
+    }
+
+    private void AddComponentCustomField(IFeatureFile featureFile, Scenario scenario, List<CustomFieldItem> result)
+    {
+        var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
+        var componentTag = allTags.LastOrDefault(tag => tag.Name.Contains(TagsConstants.Component, StringComparison.InvariantCultureIgnoreCase));
+
+        if (componentTag is not null)
+        {
+            var componentField = GetField("Component");
+
+            var componentValues = componentTag.Name.Replace(TagsConstants.Component, "").Split(",");
+            foreach (var componentValue in componentValues)
+            {
+                AddCustomField(result, componentField, componentValue);    
+            }
+            
+            return;
+        }
+        
+        var settingsComponent = _allureTestOpsSettings.Component;
+        if (settingsComponent is not null)
+        {
+            var componentField = GetField("Component");
+            AddCustomField(result, componentField, settingsComponent);
+        }
+    }
+
+    private CustomFieldSchemaContent GetField(string fieldName)
+    {
+        var componentField = CustomFieldSchema.FirstOrDefault(content => content.CustomField.Name.Equals(fieldName));
+
+        if (componentField is null)
+        {
+            Log.Error($"{fieldName} field is not found.");
+            _context.IsRunSuccessful = false;
+            return componentField;
+        }
+
+        var values = _allureClientWrapper.GetCustomFieldValues(componentField.CustomField.Id);
+
+        if (!_customFieldsValues.ContainsKey(componentField.CustomField.Id))
+        {
+            _customFieldsValues.Add(componentField.CustomField.Id, values.ToList());
+        }
+
+        return componentField;
+    }
+
+    private void AddCustomField(List<CustomFieldItem> result, CustomFieldSchemaContent customField, string cfValue)
+    {
+        var value = _customFieldsValues[customField.CustomField.Id].FirstOrDefault(item => item.Name.Equals(cfValue));
+        if (value is null)
+        {
+            var customFieldValue = _allureClientWrapper.CreateNewCustomFieldValue(new CustomFieldItem()
+            {
+                Name = cfValue,
+                CustomField = new Item
+                {
+                    Id = customField.CustomField.Id
+                }
+            });
+            value = customFieldValue;
+            _customFieldsValues[customField.CustomField.Id].Add(value);
+        }
+
+        result.Add(new CustomFieldItem
+        {
+            Id = value.Id,
+            Name = value.Name,
+            CustomField = new Item
+            {
+                Id = value.CustomField.Id
+            }
+        });
+    }
+
+    private void AddEpicCustomFiled(IFeatureFile featureFile, List<CustomFieldItem> result)
+    {
+        var epicField = GetField("Epic");
+        var values = _allureClientWrapper.GetCustomFieldValues(epicField.CustomField.Id);
+        if (!_customFieldsValues.ContainsKey(epicField.CustomField.Id))
+        {
+            _customFieldsValues.Add(epicField.CustomField.Id, values.ToList());
+        }
+
+        var epic = Path.GetDirectoryName(featureFile.RelativePath);
+
+        AddCustomField(result, epicField, epic);
+    }
+
+    private void AddFeatureCustomFiled(IFeatureFile featureFile, List<CustomFieldItem> result)
+    {
+        var featureField = GetField("Feature");
+        AddCustomField(result, featureField, featureFile.Document.Feature.Name);
+    }
+
     private List<Tag> AddTags(Scenario scenario, IFeatureFile featureFile)
     {
         var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
         //Remove tags that will duplicate existing fields
-        RemoveTags(allTags, TagsConstants.Reference, TagsConstants.Automated, TagsConstants.Status);
-        
+        RemoveTags(allTags, TagsConstants.Reference, TagsConstants.Automated, TagsConstants.Status, TagsConstants.Component);
+
         var result = new List<Tag>();
         if (allTags.Any())
         {
@@ -93,7 +202,8 @@ public class CaseContentBuilder
                     result.Add(newTag);
                     continue;
                 }
-                result.Add(new Tag {Id = allureTag.Id, Name = tagName});
+
+                result.Add(new Tag { Id = allureTag.Id, Name = tagName });
             }
         }
 
@@ -104,7 +214,7 @@ public class CaseContentBuilder
     {
         foreach (var tagToRemove in tagsToRemove)
         {
-            allTags.RemoveAll(tag => tag.Name.Contains(tagToRemove, StringComparison.InvariantCultureIgnoreCase));    
+            allTags.RemoveAll(tag => tag.Name.Contains(tagToRemove, StringComparison.InvariantCultureIgnoreCase));
         }
     }
 

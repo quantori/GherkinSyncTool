@@ -5,13 +5,18 @@ Copyright (c) 2022 Quantori.
 Quantori GherkinSyncTool is an open-source console application that synchronizes tests scenarios
 in [Gherkin syntax](https://cucumber.io/docs/gherkin/) (also known as feature files) with a test management system.
 
+The GherkinSyncTool helps in building the development process using the BDD or “Specification by examples”. Both
+of them implement the basic principles of Agile and focus on team collaboration to improve communication between
+analysts, developers, testers, and the customer.
+
 ![Diagram](Docs/Diagram.png)
 
 ## How it works
 
 The GherkinSyncTool scans the files in the specified folder for the * .feature files. It sends API calls to a test
 management system to create or update test cases. Received test ID will be populated into the feature files as tags for
-the following synchronization. The test case id tag looks like this: `@tc:1234`. Important: the test case id tag should not be deleted from the file!
+the following synchronization. The test case id tag looks like this: `@tc:1234`. Important: the test case id tag should
+not be deleted from the file!
 
 ## Supported test management systems
 
@@ -77,7 +82,9 @@ GherkinSyncTool can be configured in three ways. The priority corresponds to the
 | BaseDirectory | Absolute or relative to application folder path that contains *.feature files                        | Yes      |
 | TagIdPrefix   | A tag prefix that will be used for mark test scenarios as synchronized with a test management system | No       |
 
-Allure TestOps note: `TagIdPrefix` should be configured to fill the 'as_id' Allure label correctly. For example, for Specflow TagIdPrefix should be equals `@label:as_id:` It is required to not duplicate manual and automated test cases. The test run result will be attached to the correct Allure test ID.
+Allure TestOps note: `TagIdPrefix` should be configured to fill the 'as_id' Allure label correctly. For example, for
+Specflow TagIdPrefix should be equals `@label:as_id:` It is required to not duplicate manual and automated test cases.
+The test run result will be attached to the correct Allure test ID.
 
 ### Formatting settings
 
@@ -122,18 +129,21 @@ Allure TestOps note: `TagIdPrefix` should be configured to fill the 'as_id' Allu
 ### Allure TestOps settings
 
 | Parameter         | Description                                                                       | Required |
-|-------------------|-----------------------------------------------------------------------------------| :------: |
-| BaseUrl           | Azure DevOps URL address                                                          | Yes      |
-| AccessToken       | API access token                                                                  | Yes      |
-| ProjectId         | ID of a project that will be used for synchronization                             | Yes      |
-| GherkinSyncToolId | ID for isolating usage of multiple GherkinSyncTools in one test management system | Yes      |
+|-------------------|-----------------------------------------------------------------------------------|:-------:|
+| BaseUrl           | Azure DevOps URL address                                                          |   Yes   |
+| AccessToken       | API access token                                                                  |   Yes   |
+| ProjectId         | ID of a project that will be used for synchronization                             |   Yes   |
+| GherkinSyncToolId | ID for isolating usage of multiple GherkinSyncTools in one test management system |   Yes   |
+| Component         | Set component field                                                               |   No    |
 
 #### Allure Tags
 
 - `@Status:Draft` a test case status will be changed to "Draft".
 - `@Automated` a test case will be marked as automated.
+- `@Component:Frontend` the "Component" field will be set as "Frontend".
 
 Example:
+
 ```
 @Automated
 @Status:Draft
