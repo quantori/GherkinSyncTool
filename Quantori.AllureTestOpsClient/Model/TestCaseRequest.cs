@@ -12,7 +12,7 @@ namespace Quantori.AllureTestOpsClient.Model
         public bool? Deleted { get; set; }
         public bool? Automated { get; set; }
         public bool? External { get; set; }
-        public int? TestLayerId { get; set; }
+        public long? TestLayerId { get; set; }
         public long? StatusId { get; set; }
         public long? WorkflowId { get; set; }
         public Scenario Scenario { get; set; }

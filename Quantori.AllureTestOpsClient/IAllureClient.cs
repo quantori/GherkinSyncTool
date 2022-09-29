@@ -181,5 +181,18 @@ namespace Quantori.AllureTestOpsClient
         Task<IApiResponse<CustomFieldItem>> CreateCustomFieldValueAsync([Body]CustomFieldItem customFieldItem);
 
         #endregion
+        
+        #region Test layer schema controller
+        /// <summary>
+        /// Find all test layer schemas for given project
+        /// </summary>
+        /// <param name="projectId"></param>
+        /// <param name="page">Zero-based page index (0..N)</param>
+        /// <param name="size">The size of the page to be returned</param>
+        /// <param name="sort">Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.</param>
+        /// <returns></returns>
+        [Get("/api/rs/testlayerschema")]
+        Task<IApiResponse<GetContentResponse<TestLayerSchemaContent>>> GetTestLayerSchemaAsync(int projectId, int page = 0, int size = 100, string sort = null);
+        #endregion
     }
 }

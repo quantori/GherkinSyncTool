@@ -36,6 +36,11 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             return GetAllContent(i => _allureClient.GetCustomFieldSchemaAsync(_allureTestOpsSettings.ProjectId, i).Result);
         }
         
+        public IEnumerable<TestLayerSchemaContent> GetTestLayerSchema()
+        {
+            return GetAllContent(i => _allureClient.GetTestLayerSchemaAsync(_allureTestOpsSettings.ProjectId, i).Result);
+        }
+        
         public IEnumerable<CustomFieldItem> GetCustomFieldValues(long customFieldId)
         {
             return GetAllContent(i => _allureClient.GetCustomFieldValuesAsync(customFieldId, i).Result);
@@ -266,6 +271,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             if (!currentCase.Automated.Equals(caseToUpdate.CreateTestCaseRequest.Automated)) return false;
             if (!currentCase.Status.Id.Equals(caseToUpdate.CreateTestCaseRequest.StatusId)) return false;
             if (!currentCase.Description.Equals(caseToUpdate.CreateTestCaseRequest.Description)) return false;
+            if (!currentCase.Layer.Id.Equals(caseToUpdate.CreateTestCaseRequest.TestLayerId)) return false;
             
             var caseToUpdateTagIds = caseToUpdate.CreateTestCaseRequest.Tags.Select(tag => tag.Id).ToList();
             var currentCaseTagIds = currentCase.Tags.Select(tag => tag.Id).ToList();

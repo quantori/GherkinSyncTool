@@ -135,12 +135,14 @@ The test run result will be attached to the correct Allure test ID.
 | ProjectId         | ID of a project that will be used for synchronization                             |    Yes    |
 | GherkinSyncToolId | ID for isolating usage of multiple GherkinSyncTools in one test management system |    Yes    |
 | CustomFields      | Set custom fields                                                                 |    No     |
+| TestLayer         | Set a scenario test layer                                                         |    No     |
 
 #### Allure Tags
 
 - `@Status:Draft` a test case status will be changed to "Draft".
 - `@Automated` a test case will be marked as automated.
 - `@Component:Frontend` the "Component" field will be set as "Frontend".
+- `@Layer:UI` set a scenario test layer.
 
 Example:
 
