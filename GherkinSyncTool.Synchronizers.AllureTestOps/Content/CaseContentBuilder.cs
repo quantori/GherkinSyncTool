@@ -108,6 +108,12 @@ public class CaseContentBuilder
     private TestLayerSchemaContent GetTestLayer(Scenario scenario, string testLayerName)
     {
         var testLayer = TestLayerSchema.FirstOrDefault(content => content.Key.Equals(testLayerName));
+        if (!TestLayerSchema.Any())
+        {
+            Log.Error($"Test layers is not configured. Scenario: '{scenario.Name}'.");
+            _context.IsRunSuccessful = false;
+            return null;
+        }
         if (testLayer is null)
         {
             var layers = string.Join(", ", TestLayerSchema.Select(content => content.Key));
