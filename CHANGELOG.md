@@ -11,3 +11,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Allure TestOps: The scenario test layer can be configured with settings or tags.
+- Allure TestOps: Ability to put background steps to precondition.

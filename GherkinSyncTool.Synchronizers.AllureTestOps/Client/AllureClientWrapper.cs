@@ -265,7 +265,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             AddTestCaseStepAttachments(caseToUpdate, testCaseOverview.Id);
         }
 
-        private static bool AreTestCasesContentsEqual(TestCaseOverview currentCase, CreateTestCaseRequestExtended caseToUpdate)
+        private bool AreTestCasesContentsEqual(TestCaseOverview currentCase, CreateTestCaseRequestExtended caseToUpdate)
         {
             if (!currentCase.Name.Equals(caseToUpdate.CreateTestCaseRequest.Name)) return false;
             if (!currentCase.Automated.Equals(caseToUpdate.CreateTestCaseRequest.Automated)) return false;
@@ -290,6 +290,16 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             
             if (currentCase.CustomFields.Count != caseToUpdate.CreateTestCaseRequest.CustomFields.Count) return false;
             if (currentCase.CustomFields.Select(item => item.Name).Except(caseToUpdate.CreateTestCaseRequest.CustomFields.Select(item => item.Name)).Any()) return false;
+
+            if (_allureTestOpsSettings.BackgroundToPrecondition)
+            {
+                if(currentCase.Precondition is null && caseToUpdate.CreateTestCaseRequest.Precondition is not null) return false;
+                if(currentCase.Precondition is not null && caseToUpdate.CreateTestCaseRequest.Precondition is null) return false;
+                if (currentCase.Precondition is not null && caseToUpdate.CreateTestCaseRequest.Precondition is not null)
+                {
+                    if (!currentCase.Precondition.Equals(caseToUpdate.CreateTestCaseRequest.Precondition)) return false;    
+                }
+            }
             
             return true;
         }

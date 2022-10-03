@@ -44,6 +44,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Model
         public string GherkinSyncToolId { get; set; }
         public string TestLayer { get; set; }
         public List<CustomField> CustomFields { get; set; }
+        public bool BackgroundToPrecondition { get; set; }
     }
 
     public class CustomField
