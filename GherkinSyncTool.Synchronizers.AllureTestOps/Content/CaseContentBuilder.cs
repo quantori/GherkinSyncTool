@@ -35,6 +35,7 @@ public class CaseContentBuilder
     private Item _manualWorkflowId;
     private List<Tag> _testTags;
     private List<CustomFieldSchemaContent> _customFieldSchema;
+    private List<TestLayerSchemaContent> _testLayerSchema;
     private Dictionary<long, List<CustomFieldItem>> _customFieldsValues = new();
 
     public List<WorkflowSchema> WorkflowSchemas =>
@@ -49,6 +50,7 @@ public class CaseContentBuilder
     public Item ManualWorkflow => _manualWorkflowId ??= WorkflowSchemas.FirstOrDefault(schema => schema.Type.Equals(TestType.Manual))!.Workflow;
     public List<Tag> AllureTestTags => _testTags ??= _allureClientWrapper.GetAllTestTags();
     public List<CustomFieldSchemaContent> CustomFieldSchema => _customFieldSchema ??= _allureClientWrapper.GetCustomFieldSchema().ToList();
+    public List<TestLayerSchemaContent> TestLayerSchema => _testLayerSchema ??= _allureClientWrapper.GetTestLayerSchema().ToList();
 
     public CaseContentBuilder(AllureClientWrapper allureClientWrapper, Context context)
     {
@@ -70,7 +72,9 @@ public class CaseContentBuilder
                 Description = AddDescription(scenario, featureFile),
                 Scenario = AddScenario(scenario, featureFile),
                 Tags = AddTags(scenario, featureFile),
-                CustomFields = AddCustomFields(scenario, featureFile)
+                CustomFields = AddCustomFields(scenario, featureFile),
+                TestLayerId = AddTestLayerId(scenario, featureFile),
+                Precondition = AddPreconditions(featureFile)
             },
             StepsAttachments = AddStepAttachments(scenario, featureFile)
         };
@@ -78,44 +82,128 @@ public class CaseContentBuilder
         return createTestCaseRequestExtended;
     }
 
+    private string AddPreconditions(IFeatureFile featureFile)
+    {
+        var precondition = new StringBuilder();
+        if (_allureTestOpsSettings.BackgroundToPrecondition)
+        {
+            var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
+            if (background is not null)
+            {
+                foreach (var step in background.Steps)
+                {
+                    precondition.AppendLine($"**{step.Keyword.Trim()}** {step.Text}");
+                    switch (step.Argument)
+                    {
+                        case DocString docString:
+                            precondition.AppendLine(docString.Content);
+                            break;
+
+                        case DataTable table:
+                            precondition.AppendLine(ConvertToMarkdownTable(table.Rows.ToList()));
+                            break;
+                    }
+                }
+            }
+        }
+
+        return precondition.ToString();
+    }
+
+    private long? AddTestLayerId(Scenario scenario, IFeatureFile featureFile)
+    {
+        var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
+        if (allTags.Any())
+        {
+            var testLayerTag = allTags.LastOrDefault(tag => tag.Name.Contains(TagsConstants.Layer, StringComparison.InvariantCultureIgnoreCase));
+            if (testLayerTag is not null)
+            {
+                var layerTagString = testLayerTag.Name.Replace(TagsConstants.Layer, "", StringComparison.InvariantCultureIgnoreCase);
+                var testLayer = GetTestLayer(scenario, layerTagString);
+                return testLayer?.TestLayer.Id;
+            }
+        }
+
+        var customFieldsSettings = _allureTestOpsSettings.TestLayer;
+        if (customFieldsSettings is not null)
+        {
+            var testLayer = GetTestLayer(scenario, customFieldsSettings);
+            return testLayer?.TestLayer.Id;
+        }
+
+        return null;
+    }
+
+    private TestLayerSchemaContent GetTestLayer(Scenario scenario, string testLayerName)
+    {
+        var testLayer = TestLayerSchema.FirstOrDefault(content => content.Key.Equals(testLayerName, StringComparison.InvariantCultureIgnoreCase));
+        if (!TestLayerSchema.Any())
+        {
+            Log.Error($"Test layers is not configured. Scenario: '{scenario.Name}'.");
+            _context.IsRunSuccessful = false;
+            return null;
+        }
+
+        if (testLayer is null)
+        {
+            var layers = string.Join(", ", TestLayerSchema.Select(content => content.Key));
+            Log.Error($"'{testLayerName}' is incorrect option for layer: '{scenario.Name}'. Valid options are: '{layers}'.'");
+            _context.IsRunSuccessful = false;
+            return null;
+        }
+
+        return testLayer;
+    }
+
     private List<CustomFieldItem> AddCustomFields(Scenario scenario, IFeatureFile featureFile)
     {
         var result = new List<CustomFieldItem>();
         AddFeatureCustomFiled(featureFile, result);
         AddEpicCustomFiled(featureFile, result);
-        AddComponentCustomField(featureFile, scenario, result);
+        AddCustomFieldsFromTags(featureFile, scenario, result);
         return result;
     }
 
-    private void AddComponentCustomField(IFeatureFile featureFile, Scenario scenario, List<CustomFieldItem> result)
+    private void AddCustomFieldsFromTags(IFeatureFile featureFile, Scenario scenario, List<CustomFieldItem> result)
     {
+        var customFieldsSettings = _allureTestOpsSettings.CustomFields;
+        if (customFieldsSettings is null) return;
+
         var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
-        var componentTag = allTags.LastOrDefault(tag => tag.Name.Contains(TagsConstants.Component, StringComparison.InvariantCultureIgnoreCase));
-
-        if (componentTag is not null)
+        foreach (var customFieldsSetting in customFieldsSettings)
         {
-            var componentField = GetField("Component");
-
-            var componentValues = componentTag.Name.Replace(TagsConstants.Component, "").Split(",");
-            foreach (var componentValue in componentValues)
+            if (allTags.Any())
             {
-                AddCustomField(result, componentField, componentValue);    
+                var fieldTag = allTags.LastOrDefault(tag =>
+                    tag.Name.Contains($"@{customFieldsSetting.Name}", StringComparison.InvariantCultureIgnoreCase));
+
+                if (fieldTag is not null)
+                {
+                    var customField = GetField(customFieldsSetting.Name);
+                    if (customField is null) continue;
+
+                    var cfValues = fieldTag.Name.Replace($"@{customFieldsSetting.Name}:", "").Split(",");
+                    foreach (var cfValue in cfValues)
+                    {
+                        AddCustomField(result, customField, cfValue);
+                    }
+
+                    continue;
+                }
             }
-            
-            return;
-        }
-        
-        var settingsComponent = _allureTestOpsSettings.Component;
-        if (settingsComponent is not null)
-        {
-            var componentField = GetField("Component");
-            AddCustomField(result, componentField, settingsComponent);
+
+            if (customFieldsSetting.Value is not null)
+            {
+                var customField = GetField(customFieldsSetting.Name);
+                if (customField is null) continue;
+                AddCustomField(result, customField, customFieldsSetting.Value);
+            }
         }
     }
 
     private CustomFieldSchemaContent GetField(string fieldName)
     {
-        var componentField = CustomFieldSchema.FirstOrDefault(content => content.CustomField.Name.Equals(fieldName));
+        var componentField = CustomFieldSchema.FirstOrDefault(content => content.Key.Equals(fieldName, StringComparison.InvariantCultureIgnoreCase));
 
         if (componentField is null)
         {
@@ -186,7 +274,15 @@ public class CaseContentBuilder
     {
         var allTags = GherkinHelper.GetAllTags(scenario, featureFile);
         //Remove tags that will duplicate existing fields
-        RemoveTags(allTags, TagsConstants.Reference, TagsConstants.Automated, TagsConstants.Status, TagsConstants.Component);
+        var tagsToRemove = new List<string>
+        {
+            TagsConstants.Reference,
+            TagsConstants.Automated,
+            TagsConstants.Status,
+            TagsConstants.Layer
+        };
+        tagsToRemove.AddRange(_allureTestOpsSettings.CustomFields.Select(field => field.Name));
+        RemoveTags(allTags, tagsToRemove);
 
         var result = new List<Tag>();
         if (allTags.Any())
@@ -210,7 +306,7 @@ public class CaseContentBuilder
         return result;
     }
 
-    private void RemoveTags(List<Gherkin.Ast.Tag> allTags, params string[] tagsToRemove)
+    private void RemoveTags(List<Gherkin.Ast.Tag> allTags, IEnumerable<string> tagsToRemove)
     {
         foreach (var tagToRemove in tagsToRemove)
         {
@@ -222,14 +318,17 @@ public class CaseContentBuilder
     {
         var attachments = ExtractAttachments(scenario.Steps.ToList());
 
-        var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
-        if (background is not null)
+        if (!_allureTestOpsSettings.BackgroundToPrecondition)
         {
-            var backgroundStepCount = background.Steps.Count();
-            var attachmentsShifted = attachments.ToDictionary(attachment => attachment.Key + backgroundStepCount, attachment => attachment.Value);
+            var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
+            if (background is not null)
+            {
+                var backgroundStepCount = background.Steps.Count();
+                var attachmentsShifted = attachments.ToDictionary(attachment => attachment.Key + backgroundStepCount, attachment => attachment.Value);
 
-            var backgroundAttachments = ExtractAttachments(background.Steps.ToList());
-            return backgroundAttachments.Concat(attachmentsShifted).ToDictionary(pair => pair.Key, pair => pair.Value);
+                var backgroundAttachments = ExtractAttachments(background.Steps.ToList());
+                return backgroundAttachments.Concat(attachmentsShifted).ToDictionary(pair => pair.Key, pair => pair.Value);
+            }
         }
 
         return attachments;
@@ -278,12 +377,14 @@ public class CaseContentBuilder
     private List<AllureTestCaseStep> GetSteps(Scenario scenario, IFeatureFile featureFile)
     {
         var scenarioSteps = ExtractSteps(scenario.Steps);
-
-        var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
-        if (background is not null)
+        if (!_allureTestOpsSettings.BackgroundToPrecondition)
         {
-            var backgroundSteps = ExtractSteps(background.Steps);
-            return backgroundSteps.Concat(scenarioSteps).ToList();
+            var background = featureFile.Document.Feature.Children.OfType<Background>().FirstOrDefault();
+            if (background is not null)
+            {
+                var backgroundSteps = ExtractSteps(background.Steps);
+                return backgroundSteps.Concat(scenarioSteps).ToList();
+            }
         }
 
         return scenarioSteps;

@@ -36,6 +36,11 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             return GetAllContent(i => _allureClient.GetCustomFieldSchemaAsync(_allureTestOpsSettings.ProjectId, i).Result);
         }
         
+        public IEnumerable<TestLayerSchemaContent> GetTestLayerSchema()
+        {
+            return GetAllContent(i => _allureClient.GetTestLayerSchemaAsync(_allureTestOpsSettings.ProjectId, i).Result);
+        }
+        
         public IEnumerable<CustomFieldItem> GetCustomFieldValues(long customFieldId)
         {
             return GetAllContent(i => _allureClient.GetCustomFieldValuesAsync(customFieldId, i).Result);
@@ -260,13 +265,23 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             AddTestCaseStepAttachments(caseToUpdate, testCaseOverview.Id);
         }
 
-        private static bool AreTestCasesContentsEqual(TestCaseOverview currentCase, CreateTestCaseRequestExtended caseToUpdate)
+        private bool AreTestCasesContentsEqual(TestCaseOverview currentCase, CreateTestCaseRequestExtended caseToUpdate)
         {
             if (!currentCase.Name.Equals(caseToUpdate.CreateTestCaseRequest.Name)) return false;
             if (!currentCase.Automated.Equals(caseToUpdate.CreateTestCaseRequest.Automated)) return false;
             if (!currentCase.Status.Id.Equals(caseToUpdate.CreateTestCaseRequest.StatusId)) return false;
-            if (!currentCase.Description.Equals(caseToUpdate.CreateTestCaseRequest.Description)) return false;
-            
+            if(currentCase.Description is null && caseToUpdate.CreateTestCaseRequest.Description is not null) return false;
+            if(currentCase.Description is not null && caseToUpdate.CreateTestCaseRequest.Description is null) return false;
+            if (currentCase.Description is not null && caseToUpdate.CreateTestCaseRequest.Description is not null)
+            {
+                if (!currentCase.Description.Equals(caseToUpdate.CreateTestCaseRequest.Description)) return false;    
+            }
+            if (currentCase.Layer is null && caseToUpdate.CreateTestCaseRequest.TestLayerId is not null) return false;
+            if (currentCase.Layer is not null && caseToUpdate.CreateTestCaseRequest.TestLayerId is null) return false;
+            if (currentCase.Layer is not null && caseToUpdate.CreateTestCaseRequest.TestLayerId is not null)
+            {
+                if (!currentCase.Layer.Id.Equals(caseToUpdate.CreateTestCaseRequest.TestLayerId)) return false;    
+            }
             var caseToUpdateTagIds = caseToUpdate.CreateTestCaseRequest.Tags.Select(tag => tag.Id).ToList();
             var currentCaseTagIds = currentCase.Tags.Select(tag => tag.Id).ToList();
 
@@ -275,6 +290,16 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             
             if (currentCase.CustomFields.Count != caseToUpdate.CreateTestCaseRequest.CustomFields.Count) return false;
             if (currentCase.CustomFields.Select(item => item.Name).Except(caseToUpdate.CreateTestCaseRequest.CustomFields.Select(item => item.Name)).Any()) return false;
+
+            if (_allureTestOpsSettings.BackgroundToPrecondition)
+            {
+                if(currentCase.Precondition is null && caseToUpdate.CreateTestCaseRequest.Precondition is not null) return false;
+                if(currentCase.Precondition is not null && caseToUpdate.CreateTestCaseRequest.Precondition is null) return false;
+                if (currentCase.Precondition is not null && caseToUpdate.CreateTestCaseRequest.Precondition is not null)
+                {
+                    if (!currentCase.Precondition.Equals(caseToUpdate.CreateTestCaseRequest.Precondition)) return false;    
+                }
+            }
             
             return true;
         }

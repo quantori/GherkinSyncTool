@@ -128,25 +128,29 @@ The test run result will be attached to the correct Allure test ID.
 
 ### Allure TestOps settings
 
-| Parameter         | Description                                                                       | Required |
-|-------------------|-----------------------------------------------------------------------------------|:-------:|
-| BaseUrl           | Azure DevOps URL address                                                          |   Yes   |
-| AccessToken       | API access token                                                                  |   Yes   |
-| ProjectId         | ID of a project that will be used for synchronization                             |   Yes   |
-| GherkinSyncToolId | ID for isolating usage of multiple GherkinSyncTools in one test management system |   Yes   |
-| Component         | Set component field                                                               |   No    |
+| Parameter                | Description                                                                       | Required  |
+|--------------------------|-----------------------------------------------------------------------------------|:---------:|
+| BaseUrl                  | Azure DevOps URL address                                                          |    Yes    |
+| AccessToken              | API access token                                                                  |    Yes    |
+| ProjectId                | ID of a project that will be used for synchronization                             |    Yes    |
+| GherkinSyncToolId        | ID for isolating usage of multiple GherkinSyncTools in one test management system |    Yes    |
+| CustomFields             | Set custom fields                                                                 |    No     |
+| TestLayer                | Set a scenario test layer                                                         |    No     |
+| BackgroundToPrecondition | Put background steps to precondition                                             |    No     |
 
 #### Allure Tags
 
 - `@Status:Draft` a test case status will be changed to "Draft".
 - `@Automated` a test case will be marked as automated.
 - `@Component:Frontend` the "Component" field will be set as "Frontend".
+- `@Layer:UI` set a scenario test layer.
 
 Example:
 
 ```
 @Automated
 @Status:Draft
+@Component:Auth
 @tc:235
 Scenario: Test case example
   Given prepare sustem
