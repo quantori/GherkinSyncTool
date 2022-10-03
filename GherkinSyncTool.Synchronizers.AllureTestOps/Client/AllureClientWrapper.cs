@@ -31,21 +31,22 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         {
             return GetAllContent(i => _allureClient.GetTestCasesAsync(_allureTestOpsSettings.ProjectId, i).Result);
         }
+
         public IEnumerable<CustomFieldSchemaContent> GetCustomFieldSchema()
         {
             return GetAllContent(i => _allureClient.GetCustomFieldSchemaAsync(_allureTestOpsSettings.ProjectId, i).Result);
         }
-        
+
         public IEnumerable<TestLayerSchemaContent> GetTestLayerSchema()
         {
             return GetAllContent(i => _allureClient.GetTestLayerSchemaAsync(_allureTestOpsSettings.ProjectId, i).Result);
         }
-        
+
         public IEnumerable<CustomFieldItem> GetCustomFieldValues(long customFieldId)
         {
             return GetAllContent(i => _allureClient.GetCustomFieldValuesAsync(customFieldId, i).Result);
         }
-        
+
         public CustomFieldItem CreateNewCustomFieldValue(CustomFieldItem customFieldItem)
         {
             var response = _allureClient.CreateCustomFieldValueAsync(customFieldItem).Result;
@@ -76,7 +77,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             return response.Content;
         }
 
-        public TestCaseOverview GetTestCaseOverview(ulong id)
+        public TestCaseOverview GetTestCaseOverview(long id)
         {
             var response = _allureClient.GetTestCaseOverviewAsync(id).Result;
             ValidateResponse(response);
@@ -107,7 +108,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
                     if (caseToUpdate.StepsAttachments.Any())
                     {
                         UpdateTestCaseStepAttachments(caseToUpdate, testCaseOverview);
-                    }    
+                    }
                 }
             }
 
@@ -122,14 +123,14 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
             if (!contentEqual || !scenarioIsEqual)
             {
-                var response = _allureClient.UpdateTestCaseAsync(currentCase.Id, caseToUpdate.CreateTestCaseRequest).Result;
+                var response = _allureClient.UpdateTestCaseAsync(testCaseOverview.Id, caseToUpdate.CreateTestCaseRequest).Result;
                 ValidateResponse(response);
                 updated = true;
             }
 
             Log.Info(updated
-                ? $"Updated: [{currentCase.Id}] {caseToUpdate.CreateTestCaseRequest.Name}"
-                : $"Up-to-date: [{currentCase.Id}] {currentCase.Name}");
+                ? $"Updated: [{testCaseOverview.Id}] {caseToUpdate.CreateTestCaseRequest.Name}"
+                : $"Up-to-date: [{testCaseOverview.Id}] {testCaseOverview.Name}");
         }
 
         private bool AreTestCaseScenariosEqual(TestCaseOverview testCaseOverview, CreateTestCaseRequestExtended caseToUpdate)
@@ -141,7 +142,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
             if (testCaseOverview.Scenario is null && caseToUpdate.CreateTestCaseRequest.Scenario.Steps is not null)
             {
-               return false;
+                return false;
             }
 
             if (testCaseOverview.Scenario!.Steps.Count != caseToUpdate.CreateTestCaseRequest.Scenario.Steps!.Count)
@@ -177,7 +178,8 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
                         return false;
                     }
 
-                    var allureAttachment = _allureClient.GetTestCaseAttachmentContentAsync(stepsFromAllure[i].Attachments.FirstOrDefault()!.Id).Result;
+                    var allureAttachment = _allureClient.GetTestCaseAttachmentContentAsync(stepsFromAllure[i].Attachments.FirstOrDefault()!.Id)
+                        .Result;
 
                     if (!allureAttachment.Content!.Equals(attachment))
                     {
@@ -208,6 +210,11 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
         {
             return GetAllContent(i => _allureClient.GetWorkflowAsync(i).Result);
         }
+        
+        public IEnumerable<TestCase> SearchAllTestCasesWithQuery(string rql, bool deleted = false)
+        {
+            return GetAllContent(i => _allureClient.SearchTestCasesAsync(_allureTestOpsSettings.ProjectId, rql, deleted, i).Result);
+        }
 
         public List<Attachment> UploadTestCaseAttachments(long testCaseId, IEnumerable<ByteArrayPart> content)
         {
@@ -236,17 +243,17 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
 
             ValidateResponse(response);
         }
-        
+
         public List<Tag> GetAllTestTags()
         {
             var response = _allureClient.GetTagsAsync().Result;
             ValidateResponse(response);
             return response.Content;
         }
-        
+
         public Tag AddTestTags(string name)
         {
-            var response = _allureClient.CreateTagAsync(new Tag {Name = name}).Result;
+            var response = _allureClient.CreateTagAsync(new Tag { Name = name }).Result;
             ValidateResponse(response);
             return response.Content;
         }
@@ -259,9 +266,9 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
                 foreach (var id in attachment.Select(step => step.Attachments.FirstOrDefault()!.Id))
                 {
                     RemoveTestCaseAttachment(id);
-                }    
+                }
             }
-            
+
             AddTestCaseStepAttachments(caseToUpdate, testCaseOverview.Id);
         }
 
@@ -270,37 +277,40 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             if (!currentCase.Name.Equals(caseToUpdate.CreateTestCaseRequest.Name)) return false;
             if (!currentCase.Automated.Equals(caseToUpdate.CreateTestCaseRequest.Automated)) return false;
             if (!currentCase.Status.Id.Equals(caseToUpdate.CreateTestCaseRequest.StatusId)) return false;
-            if(currentCase.Description is null && caseToUpdate.CreateTestCaseRequest.Description is not null) return false;
-            if(currentCase.Description is not null && caseToUpdate.CreateTestCaseRequest.Description is null) return false;
+            if (currentCase.Description is null && caseToUpdate.CreateTestCaseRequest.Description is not null) return false;
+            if (currentCase.Description is not null && caseToUpdate.CreateTestCaseRequest.Description is null) return false;
             if (currentCase.Description is not null && caseToUpdate.CreateTestCaseRequest.Description is not null)
             {
-                if (!currentCase.Description.Equals(caseToUpdate.CreateTestCaseRequest.Description)) return false;    
+                if (!currentCase.Description.Equals(caseToUpdate.CreateTestCaseRequest.Description)) return false;
             }
+
             if (currentCase.Layer is null && caseToUpdate.CreateTestCaseRequest.TestLayerId is not null) return false;
             if (currentCase.Layer is not null && caseToUpdate.CreateTestCaseRequest.TestLayerId is null) return false;
             if (currentCase.Layer is not null && caseToUpdate.CreateTestCaseRequest.TestLayerId is not null)
             {
-                if (!currentCase.Layer.Id.Equals(caseToUpdate.CreateTestCaseRequest.TestLayerId)) return false;    
+                if (!currentCase.Layer.Id.Equals(caseToUpdate.CreateTestCaseRequest.TestLayerId)) return false;
             }
+
             var caseToUpdateTagIds = caseToUpdate.CreateTestCaseRequest.Tags.Select(tag => tag.Id).ToList();
             var currentCaseTagIds = currentCase.Tags.Select(tag => tag.Id).ToList();
 
             if (currentCaseTagIds.Count != caseToUpdateTagIds.Count) return false;
             if (currentCaseTagIds.Except(caseToUpdateTagIds).Any()) return false;
-            
+
             if (currentCase.CustomFields.Count != caseToUpdate.CreateTestCaseRequest.CustomFields.Count) return false;
-            if (currentCase.CustomFields.Select(item => item.Name).Except(caseToUpdate.CreateTestCaseRequest.CustomFields.Select(item => item.Name)).Any()) return false;
+            if (currentCase.CustomFields.Select(item => item.Name).Except(caseToUpdate.CreateTestCaseRequest.CustomFields.Select(item => item.Name))
+                .Any()) return false;
 
             if (_allureTestOpsSettings.BackgroundToPrecondition)
             {
-                if(currentCase.Precondition is null && caseToUpdate.CreateTestCaseRequest.Precondition is not null) return false;
-                if(currentCase.Precondition is not null && caseToUpdate.CreateTestCaseRequest.Precondition is null) return false;
+                if (currentCase.Precondition is null && caseToUpdate.CreateTestCaseRequest.Precondition is not null) return false;
+                if (currentCase.Precondition is not null && caseToUpdate.CreateTestCaseRequest.Precondition is null) return false;
                 if (currentCase.Precondition is not null && caseToUpdate.CreateTestCaseRequest.Precondition is not null)
                 {
-                    if (!currentCase.Precondition.Equals(caseToUpdate.CreateTestCaseRequest.Precondition)) return false;    
+                    if (!currentCase.Precondition.Equals(caseToUpdate.CreateTestCaseRequest.Precondition)) return false;
                 }
             }
-            
+
             return true;
         }
 
@@ -330,6 +340,25 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps.Client
             {
                 var stepNumber = stepNumbers[i];
                 caseRequestExtended.CreateTestCaseRequest.Scenario.Steps[stepNumber].Attachments = new List<Attachment> { attachments[i] };
+            }
+        }
+
+        public void RemoveTestCases(List<long> idsToDelete)
+        {
+            var request = new TestCaseBulk
+            {
+                Selection = new Selection
+                {
+                    ProjectId = _allureTestOpsSettings.ProjectId,
+                    Inverted = false,
+                    LeafsInclude = idsToDelete
+                }
+            };
+            var response = _allureClient.RemoveTestCasesAsync(request).Result;
+            ValidateResponse(response);
+            foreach (var id in idsToDelete)
+            {
+                Log.Info($"Deleted: [{id}]");
             }
         }
     }

@@ -43,7 +43,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
             var stopwatch = Stopwatch.StartNew();
             var casesToMove = new Dictionary<ulong, List<ulong>>();
             var testRailCases = _testRailClientWrapper.GetCases();
-            var featureFilesTagIds = new List<ulong>(); 
+            var featureFilesTagIds = new List<ulong>();
 
             foreach (var featureFile in featureFiles)
             {
@@ -68,8 +68,8 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                             Log.Error(e, $"The case has not been created: {scenario.Name}");
                             _context.IsRunSuccessful = false;
                             continue;
-                        } 
-                        
+                        }
+
                         var lineNumberToInsert = scenario.Location.Line - 1 + insertedTagIds;
                         var formattedTagId = GherkinHelper.FormatTagId(addCaseResponse.Id.ToString());
                         TextFilesEditMethods.InsertLineToTheFile(featureFile.AbsolutePath, lineNumberToInsert,
@@ -81,9 +81,9 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                     if (tagId is not null)
                     {
                         var caseId = GherkinHelper.GetTagId(tagId);
-                        featureFilesTagIds.Add(caseId);
-                            
-                        var testRailCase = testRailCases.FirstOrDefault(c => c.Id == caseId);
+                        featureFilesTagIds.Add((ulong)caseId);
+
+                        var testRailCase = testRailCases.FirstOrDefault(c => c.Id == (ulong)caseId);
                         if (testRailCase is null)
                         {
                             Log.Warn($"Case with id {caseId} not found. Recreating missing case");
@@ -97,6 +97,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                                 _context.IsRunSuccessful = false;
                                 continue;
                             }
+
                             var formattedTagId = GherkinHelper.FormatTagId(testRailCase.Id.ToString());
                             TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath,
                                 tagId.Location.Line - 1 + insertedTagIds, formattedTagId);
@@ -105,7 +106,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                         {
                             try
                             {
-                                _testRailClientWrapper.UpdateCase(testRailCase, caseRequest);    
+                                _testRailClientWrapper.UpdateCase(testRailCase, caseRequest);
                             }
                             catch (TestRailException e)
                             {
@@ -113,9 +114,9 @@ namespace GherkinSyncTool.Synchronizers.TestRail
                                 _context.IsRunSuccessful = false;
                             }
                         }
-                        
+
                         var testRailSectionId = testRailCase.SectionId;
-                        AddCasesToMove(testRailSectionId, featureFileSectionId, caseId, casesToMove);
+                        AddCasesToMove(testRailSectionId, featureFileSectionId, (ulong)caseId, casesToMove);
                     }
                 }
             }
@@ -137,7 +138,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
             {
                 return;
             }
-            
+
             try
             {
                 _testRailClientWrapper.DeleteCases(tagsToDelete);
@@ -180,7 +181,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail
             {
                 var key = currentSectionId.Value;
                 if (!casesToMove.ContainsKey(key))
-                    casesToMove.Add(key, new List<ulong>() {caseId});
+                    casesToMove.Add(key, new List<ulong>() { caseId });
                 else casesToMove[key].Add(caseId);
             }
         }

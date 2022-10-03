@@ -125,7 +125,7 @@ public class CaseContentBuilder
         }
 
         var customFieldsSettings = _allureTestOpsSettings.TestLayer;
-        if (customFieldsSettings is not null)
+        if (!string.IsNullOrWhiteSpace(customFieldsSettings))
         {
             var testLayer = GetTestLayer(scenario, customFieldsSettings);
             return testLayer?.TestLayer.Id;
@@ -283,8 +283,20 @@ public class CaseContentBuilder
         };
         tagsToRemove.AddRange(_allureTestOpsSettings.CustomFields.Select(field => field.Name));
         RemoveTags(allTags, tagsToRemove);
-
+        
+      
+        var gstId = TagsConstants.ToolId + _allureTestOpsSettings.GherkinSyncToolId;
+        
         var result = new List<Tag>();
+        
+        var gstTag = AllureTestTags.FirstOrDefault(t => t.Name.Equals(gstId, StringComparison.InvariantCultureIgnoreCase));
+        if (gstTag is null)
+        {
+            gstTag = _allureClientWrapper.AddTestTags(gstId);
+            AllureTestTags.Add(gstTag);
+        }
+        result.Add(gstTag);
+        
         if (allTags.Any())
         {
             foreach (var tag in allTags)
@@ -293,13 +305,12 @@ public class CaseContentBuilder
                 var allureTag = AllureTestTags.FirstOrDefault(t => t.Name.Equals(tagName, StringComparison.InvariantCultureIgnoreCase));
                 if (allureTag is null)
                 {
-                    var newTag = _allureClientWrapper.AddTestTags(tagName);
-                    AllureTestTags.Add(newTag);
-                    result.Add(newTag);
+                    allureTag = _allureClientWrapper.AddTestTags(tagName);
+                    AllureTestTags.Add(allureTag);
                     continue;
                 }
 
-                result.Add(new Tag { Id = allureTag.Id, Name = tagName });
+                result.Add(allureTag);
             }
         }
 

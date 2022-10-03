@@ -6,5 +6,7 @@
         public const string Status = "@Status:";
         public const string Reference = "@Reference:";
         public const string Layer = "@Layer:";
+        //@ is not needed
+        public const string ToolId = "GST:";
     }
 }

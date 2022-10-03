@@ -36,7 +36,7 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="testCaseId"></param>
         /// <returns></returns>
         [Get("/api/rs/testcase/{id}/overview")]
-        Task<IApiResponse<TestCaseOverview>> GetTestCaseOverviewAsync([AliasAs("id")] ulong testCaseId);
+        Task<IApiResponse<TestCaseOverview>> GetTestCaseOverviewAsync([AliasAs("id")] long testCaseId);
 
         /// <summary>
         /// Update a test case
@@ -45,7 +45,7 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="updateTestCaseRequest"></param>
         /// <returns></returns>
         [Patch("/api/rs/testcase/{id}")]
-        Task<IApiResponse<TestCase>> UpdateTestCaseAsync([AliasAs("id")] ulong testCaseId, [Body] TestCaseRequest updateTestCaseRequest);
+        Task<IApiResponse<TestCase>> UpdateTestCaseAsync([AliasAs("id")] long testCaseId, [Body] TestCaseRequest updateTestCaseRequest);
 
         #endregion
 
@@ -147,7 +147,7 @@ namespace Quantori.AllureTestOpsClient
         #endregion
 
         #region Custom field schema controller
-        
+
         /// <summary>
         /// Find all custom field schemas for given project
         /// </summary>
@@ -157,10 +157,11 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="sort">Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.</param>
         /// <returns></returns>
         [Get("/api/rs/cfschema")]
-        Task<IApiResponse<GetContentResponse<CustomFieldSchemaContent>>> GetCustomFieldSchemaAsync(int projectId, int page = 0, int size = 100, string sort = null);
+        Task<IApiResponse<GetContentResponse<CustomFieldSchemaContent>>> GetCustomFieldSchemaAsync(int projectId, int page = 0, int size = 100,
+            string sort = null);
 
         #endregion
-        
+
         #region Custom field value controller
 
         /// <summary>
@@ -172,17 +173,19 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="sort">Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.</param>
         /// <returns></returns>
         [Get("/api/rs/cfv")]
-        Task<IApiResponse<GetContentResponse<CustomFieldItem>>> GetCustomFieldValuesAsync(long customFieldId, int page = 0, int size = 100, string sort = null);
-        
+        Task<IApiResponse<GetContentResponse<CustomFieldItem>>> GetCustomFieldValuesAsync(long customFieldId, int page = 0, int size = 100,
+            string sort = null);
+
         /// <summary>
         /// Create a new custom field value
         /// </summary>
         [Post("/api/rs/cfv")]
-        Task<IApiResponse<CustomFieldItem>> CreateCustomFieldValueAsync([Body]CustomFieldItem customFieldItem);
+        Task<IApiResponse<CustomFieldItem>> CreateCustomFieldValueAsync([Body] CustomFieldItem customFieldItem);
 
         #endregion
-        
+
         #region Test layer schema controller
+
         /// <summary>
         /// Find all test layer schemas for given project
         /// </summary>
@@ -192,7 +195,31 @@ namespace Quantori.AllureTestOpsClient
         /// <param name="sort">Sorting criteria in the format: property(,asc|desc). Default sort order is ascending. Multiple sort criteria are supported.</param>
         /// <returns></returns>
         [Get("/api/rs/testlayerschema")]
-        Task<IApiResponse<GetContentResponse<TestLayerSchemaContent>>> GetTestLayerSchemaAsync(int projectId, int page = 0, int size = 100, string sort = null);
+        Task<IApiResponse<GetContentResponse<TestLayerSchemaContent>>> GetTestLayerSchemaAsync(int projectId, int page = 0, int size = 100,
+            string sort = null);
+
+        #endregion
+
+        #region Test case bulk controller
+
+        /// <summary>
+        /// Remove test cases by ids
+        /// </summary>
+        [Post("/api/rs/testcase/bulk/remove")]
+        Task<IApiResponse<TestCase>> RemoveTestCasesAsync([Body] TestCaseBulk testCaseBulk);
+
+        #endregion
+
+        #region Test case search controller
+
+        /// <summary>
+        /// Find all test cases by given AQL
+        /// </summary>
+        [Get("/api/rs/testcase/__search")]
+        Task<IApiResponse<GetContentResponse<TestCase>>> SearchTestCasesAsync(int projectId, string rql, bool deleted = false, int page = 0,
+            int size = 100,
+            string sort = null);
+
         #endregion
     }
 }

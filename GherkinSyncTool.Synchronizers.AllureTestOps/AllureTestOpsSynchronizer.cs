@@ -23,6 +23,8 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
         private readonly AllureClientWrapper _allureClientWrapper;
         private readonly Context _context;
         private readonly CaseContentBuilder _caseContentBuilder;
+        private readonly AllureTestOpsSettings _allureTestOpsSettings =
+            ConfigurationManager.GetConfiguration<AllureTestOpsConfigs>().AllureTestOpsSettings;
 
         public AllureTestOpsSynchronizer(AllureClientWrapper allureClientWrapper, Context context, CaseContentBuilder caseContentBuilder)
         {
@@ -37,7 +39,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
             Log.Info("# Start synchronization with Allure TestOps");
 
             var allureTestCases = _allureClientWrapper.GetAllTestCases().ToList();
-            var featureFilesTagIds = new List<ulong>(); 
+            var featureFilesTagIds = new List<long>();
 
             foreach (var featureFile in featureFiles)
             {
@@ -65,19 +67,21 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                     // Update scenarios that have tag id
                     if (tagId is not null)
                     {
-                        var caseIdFromFile = GherkinHelper.GetTagId(tagId);
-                        featureFilesTagIds.Add(caseIdFromFile);
+                        var id = GherkinHelper.GetTagId(tagId);
+                        featureFilesTagIds.Add(id);
                         
-                        var allureTestCase = allureTestCases.FirstOrDefault(c => c.Id == caseIdFromFile);
+                        var allureTestCase = allureTestCases.FirstOrDefault(c => c.Id == id);
                         if (allureTestCase is null)
                         {
-                            Log.Warn($"Case with id {caseIdFromFile} not found. Recreating missing case");
+                            Log.Warn($"Case with id {id} not found. Recreating missing case");
                             var newTestCase = CreateNewTestCase(caseRequestExtended);
                             if (newTestCase is null) continue;
-
+                            
                             var formattedTagId = GherkinHelper.FormatTagId(newTestCase.Id.ToString());
                             TextFilesEditMethods.ReplaceLineInTheFile(featureFile.AbsolutePath,
                                 tagId.Location.Line - 1 + insertedTagIdsCount, formattedTagId);
+                            
+                            featureFilesTagIds.Add(newTestCase.Id);
                         }
                         else
                         {
@@ -94,14 +98,32 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                     }
                 }
             }
-            //TODO:
-            //DeleteNotExistingScenarios(allureTestCases, featureFilesTagIds);
+            
+            DeleteNotExistingScenarios(featureFilesTagIds);
             Log.Debug(@$"Synchronization with Allure TestOps finished in: {stopwatch.Elapsed:mm\:ss\.fff}");
         }
 
-        private void DeleteNotExistingScenarios(List<TestCaseContent> allureTestCases, List<ulong> featureFilesTagIds)
+        private void DeleteNotExistingScenarios(List<long> featureFilesIDs)
         {
-            throw new NotImplementedException("The method should be implemented in future versions");
+            var query = $"tag is \"{TagsConstants.ToolId + _allureTestOpsSettings.GherkinSyncToolId}\"";
+            var allureTestCases = _allureClientWrapper.SearchAllTestCasesWithQuery(query).ToList();
+            
+            var allureIDs = allureTestCases.Select(c => c.Id);
+            var idsToDelete = allureIDs.Except(featureFilesIDs).ToList();
+            if (!idsToDelete.Any())
+            {
+                return;
+            }
+            
+            try
+            {
+                _allureClientWrapper.RemoveTestCases(idsToDelete);
+            }
+            catch (AllureException e)
+            {
+                Log.Error(e, $"The cases has not been deleted: {string.Join(", ", idsToDelete)}");
+                _context.IsRunSuccessful = false;
+            }
         }
 
         private TestCase CreateNewTestCase(CreateTestCaseRequestExtended caseRequestExtended)
