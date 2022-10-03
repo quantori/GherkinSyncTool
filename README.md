@@ -144,8 +144,9 @@ The test run result will be attached to the correct Allure test ID.
 - `@Automated` a test case will be marked as automated.
 - `@Component:Frontend` the "Component" field will be set as "Frontend".
 - `@Layer:UI` set a scenario test layer.
+- `@GST:Web` is a unique identifier that will be populated automatically. Don't remove it.
 
-Example:
+- Example:
 
 ```
 @Automated
