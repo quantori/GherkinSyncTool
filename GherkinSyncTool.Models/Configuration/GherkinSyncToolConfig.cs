@@ -7,7 +7,7 @@ namespace GherkinSyncTool.Models.Configuration
     {
         public string BaseDirectory { get; set; }
         public string TagIdPrefix { get; set; } = "@tc:";
-        public FormattingSettings FormattingSettings { get; set; }
+        public FormattingSettings FormattingSettings { get; set; } = new();
         public void ValidateConfigs()
         {
             if (string.IsNullOrEmpty(BaseDirectory))
