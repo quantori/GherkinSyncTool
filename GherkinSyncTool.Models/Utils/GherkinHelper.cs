@@ -38,10 +38,10 @@ namespace GherkinSyncTool.Models.Utils
             return allTags;
         }
 
-        public static ulong GetTagId(Tag tagId)
+        public static long GetTagId(Tag tagId)
         {
             if (tagId is null) throw new ArgumentNullException(nameof(tagId));
-            return ulong.Parse(Regex.Match(tagId.Name, @"\d+").Value);
+            return long.Parse(Regex.Match(tagId.Name, @"\d+").Value);
         }
 
         public static string FormatTagId(string id)
