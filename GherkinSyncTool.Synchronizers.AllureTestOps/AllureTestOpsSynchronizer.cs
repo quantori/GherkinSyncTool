@@ -62,6 +62,7 @@ namespace GherkinSyncTool.Synchronizers.AllureTestOps
                         TextFilesEditMethods.InsertLineToTheFile(featureFile.AbsolutePath, lineNumberToInsert,
                             formattedTagId);
                         insertedTagIdsCount++;
+                        featureFilesTagIds.Add(newTestCase.Id);
                     }
 
                     // Update scenarios that have tag id
