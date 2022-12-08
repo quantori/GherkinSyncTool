@@ -115,8 +115,9 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Client
 
         public IEnumerable<Section> GetSections(ulong projectId)
         {
+            var suiteId = _testRailSettings.SuiteId;
             var policy = CreateResultHandlerPolicy<IList<Section>>();
-            var result = policy.Execute(() => _testRailClient.GetSections(projectId));
+            var result = policy.Execute(() => _testRailClient.GetSections(projectId, suiteId));
             ValidateRequestResult(result);
             return result.Payload;
         }
