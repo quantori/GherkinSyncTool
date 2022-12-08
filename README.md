@@ -55,9 +55,8 @@ GherkinSyncTool has the next ways how to run:
 
 ### TestRail
 
-1. The TestRail's project must be operating in single package mode;
-2. TestRail's API should be enabled;
-3. In order for the tool to work correctly, the TestRail test template should have the
+1. TestRail's API should be enabled;
+2. In order for the tool to work correctly, the TestRail test template should have the
 custom fields that are presented in the table below. The template should not contain any required fields. An existing
 template can be used or a new one created.
 
