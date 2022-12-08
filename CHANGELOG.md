@@ -7,4 +7,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [3.20.2] - 2022-12-08
 
 ### Added
-- TestRail: Ability to work with multiple test suite projects 
+- TestRail: Ability to work with multiple test suite projects.
