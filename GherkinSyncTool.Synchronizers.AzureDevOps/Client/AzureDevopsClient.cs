@@ -51,38 +51,28 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
 
         public IEnumerable<int> GetAllTestCasesIds()
         {
-            var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
-
-            // wiql - Work Item Query Language
-            var wiql = new Wiql
-            {
-                Query = $@"Select [{WorkItemFields.Id}] 
+            var query = $@"Select [{WorkItemFields.Id}] 
                            From WorkItems 
-                           Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'"
-            };
+                           Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'";
+            
+            var workItems = GetListOfWorkItemsWithQuery(query);
 
-            var workItemIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
-
-            return workItemIds.WorkItems.Select(reference => reference.Id);
+            return workItems.Select(reference => reference.Id);
         }
         
         public IEnumerable<int> GetSyncedTestCasesIds()
         {
-            var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
 
-            // wiql - Work Item Query Language
-            var wiql = new Wiql
-            {
-                Query = $@"Select [{WorkItemFields.Id}] 
+            var query = $@"Select [{WorkItemFields.Id}] 
                            From WorkItems 
                            Where [System.WorkItemType] = '{WorkItemTypes.TestCase}' 
                            AND [{WorkItemFields.State}] <> '{TestCaseState.Closed}'
-                           AND [{WorkItemFields.Tags}] Contains '{Tags.GherkinSyncToolIdTagPrefix + _azureDevopsSettings.GherkinSyncToolId}'"
-            };
+                           AND [{WorkItemFields.Tags}] 
+                           Contains '{Tags.GherkinSyncToolIdTagPrefix + _azureDevopsSettings.GherkinSyncToolId}'";
+            
+            var workItems = GetListOfWorkItemsWithQuery(query);
 
-            var workItemIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
-
-            return workItemIds.WorkItems.Select(reference => reference.Id);
+            return workItems.Select(reference => reference.Id);
         }
 
         public List<WorkItem> ExecuteWorkItemBatch(List<WitBatchRequest> request)
@@ -204,6 +194,61 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             }
 
             return workItemTrackingHttpClient;
+        }
+
+        private IEnumerable<WorkItemReference> GetListOfWorkItemsWithQuery(string query)
+        {
+            var results = new List<WorkItemReference>();
+            var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
+            var counter = 10000;
+            var moreResults = true;
+            
+            while (moreResults)
+            {
+                // wiql - Work Item Query Language
+                var wiql = new Wiql
+                {
+                    Query = $@"{query}
+                           AND [{WorkItemFields.Id}] >= {counter - 10000} 
+                           AND [{WorkItemFields.Id}] < {counter}"
+                };
+            
+                var currentResults = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project)
+                    .Result.WorkItems.ToList();
+                
+                if (currentResults.Count == 0)
+                {
+                    try
+                    {
+                        results.AddRange(workItemTrackingHttpClient.QueryByWiqlAsync(new Wiql
+                        {
+                            Query = $@"{query} AND {WorkItemFields.Id} >= {counter}"
+                        }).Result.WorkItems.ToList());
+                        
+                        moreResults = false;
+                    }
+                    catch(Exception e)
+                    {
+                        if (e.ToString().Contains("VS402337"))
+                        {
+                            // If this exception persists, it means that there are more, than 20000 workItems left,
+                            // so increment and continue
+                        }
+                        else
+                        {
+                            throw;
+                        } 
+                    }
+                }
+                else
+                {
+                    results.AddRange(currentResults);
+                }
+
+                counter += 10000;
+            }
+
+            return results;
         }
     }
 }
