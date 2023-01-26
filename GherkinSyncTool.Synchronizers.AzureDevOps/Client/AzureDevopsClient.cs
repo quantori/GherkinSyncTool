@@ -196,7 +196,7 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             return workItemTrackingHttpClient;
         }
 
-        private IEnumerable<WorkItemReference> GetListOfWorkItemsWithQuery(string query)
+        private IList<WorkItemReference> GetListOfWorkItemsWithQuery(string query)
         {
             var results = new List<WorkItemReference>();
             var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
@@ -216,13 +216,13 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
                 var currentResults = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project)
                     .Result.WorkItems.ToList();
                 
-                if (currentResults.Count == 0)
+                if (!currentResults.Any())
                 {
                     try
                     {
                         results.AddRange(workItemTrackingHttpClient.QueryByWiqlAsync(new Wiql
                         {
-                            Query = $@"{query} AND {WorkItemFields.Id} >= {counter}"
+                            Query = $@"{query} AND [{WorkItemFields.Id}] >= {counter}"
                         }).Result.WorkItems.ToList());
                         
                         moreResults = false;
