@@ -1,6 +1,6 @@
 # Quantori GherkinSyncTool
 
-Copyright (c) 2022 Quantori.
+Copyright (c) 2023 Quantori.
 
 Quantori GherkinSyncTool is an open-source console application that synchronizes tests scenarios
 in [Gherkin syntax](https://cucumber.io/docs/gherkin/) (also known as feature files) with a test management system.
