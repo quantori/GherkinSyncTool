@@ -53,13 +53,14 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
         {
             var query = $@"Select [{WorkItemFields.Id}] 
                            From WorkItems 
-                           Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'";
-            
+                           Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'
+                           AND [System.TeamProject] = '{_azureDevopsSettings.Project}'";
+
             var workItems = GetListOfWorkItemsWithQuery(query);
 
             return workItems.Select(reference => reference.Id);
         }
-        
+
         public IEnumerable<int> GetSyncedTestCasesIds()
         {
 
@@ -67,9 +68,10 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
                            From WorkItems 
                            Where [System.WorkItemType] = '{WorkItemTypes.TestCase}' 
                            AND [{WorkItemFields.State}] <> '{TestCaseState.Closed}'
-                           AND [{WorkItemFields.Tags}] 
+                           AND [System.TeamProject] = '{_azureDevopsSettings.Project}'
+                           AND [{WorkItemFields.Tags}]
                            Contains '{Tags.GherkinSyncToolIdTagPrefix + _azureDevopsSettings.GherkinSyncToolId}'";
-            
+
             var workItems = GetListOfWorkItemsWithQuery(query);
 
             return workItems.Select(reference => reference.Id);
@@ -146,8 +148,10 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
 
                     if (witBatchResponse.Code != 200)
                     {
-                        Log.Error($"Something went wrong with the test case synchronization. Title: {request[i].GetFields()[WorkItemFields.Title]}");
-                        Log.Error($"Status code: {witBatchResponse.Code}{Environment.NewLine}Body: {witBatchResponse.Body}");
+                        Log.Error(
+                            $"Something went wrong with the test case synchronization. Title: {request[i].GetFields()[WorkItemFields.Title]}");
+                        Log.Error(
+                            $"Status code: {witBatchResponse.Code}{Environment.NewLine}Body: {witBatchResponse.Body}");
 
                         _context.IsRunSuccessful = false;
                         continue;
@@ -200,52 +204,39 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
         {
             var results = new List<WorkItemReference>();
             var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
-            var counter = 10000;
             var moreResults = true;
-            
+            var lastIdInList = 0;
+
             while (moreResults)
             {
-                // wiql - Work Item Query Language
-                var wiql = new Wiql
+                var wiql = new Wiql()
                 {
                     Query = $@"{query}
-                           AND [{WorkItemFields.Id}] >= {counter - 10000} 
-                           AND [{WorkItemFields.Id}] < {counter}"
+                                And [{WorkItemFields.Id}] > {lastIdInList}
+                                ORDER BY [{WorkItemFields.Id}] ASC"
                 };
-            
-                var currentResults = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project)
+
+                //Max number of workItems is 19999, until it gets fixed from the microsoft side
+                var currentResults = workItemTrackingHttpClient
+                    .QueryByWiqlAsync(wiql, _azureDevopsSettings.Project, top: 19999)
                     .Result.WorkItems.ToList();
-                
-                if (!currentResults.Any())
+
+                var currentResultsLength = currentResults.Count;
+
+                if (currentResultsLength < 19999)
                 {
-                    try
-                    {
-                        results.AddRange(workItemTrackingHttpClient.QueryByWiqlAsync(new Wiql
-                        {
-                            Query = $@"{query} AND [{WorkItemFields.Id}] >= {counter}"
-                        }).Result.WorkItems.ToList());
-                        
-                        moreResults = false;
-                    }
-                    catch(Exception e)
-                    {
-                        if (e.ToString().Contains("VS402337"))
-                        {
-                            // If this exception persists, it means that there are more, than 20000 workItems left,
-                            // so increment and continue
-                        }
-                        else
-                        {
-                            throw;
-                        } 
-                    }
-                }
-                else
-                {
-                    results.AddRange(currentResults);
+                    moreResults = false;
                 }
 
-                counter += 10000;
+                var lastItemInList = currentResults.LastOrDefault();
+
+                if (lastItemInList == null)
+                {
+                    break;
+                }
+
+                lastIdInList = lastItemInList.Id;
+                results.AddRange(currentResults);
             }
 
             return results;
