@@ -51,38 +51,30 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
 
         public IEnumerable<int> GetAllTestCasesIds()
         {
-            var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
-
-            // wiql - Work Item Query Language
-            var wiql = new Wiql
-            {
-                Query = $@"Select [{WorkItemFields.Id}] 
+            var query = $@"Select [{WorkItemFields.Id}] 
                            From WorkItems 
-                           Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'"
-            };
+                           Where [System.WorkItemType] = '{WorkItemTypes.TestCase}'
+                           AND [System.TeamProject] = '{_azureDevopsSettings.Project}'";
 
-            var workItemIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
+            var workItems = GetListOfWorkItemsWithQuery(query);
 
-            return workItemIds.WorkItems.Select(reference => reference.Id);
+            return workItems.Select(reference => reference.Id);
         }
-        
+
         public IEnumerable<int> GetSyncedTestCasesIds()
         {
-            var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
 
-            // wiql - Work Item Query Language
-            var wiql = new Wiql
-            {
-                Query = $@"Select [{WorkItemFields.Id}] 
+            var query = $@"Select [{WorkItemFields.Id}] 
                            From WorkItems 
                            Where [System.WorkItemType] = '{WorkItemTypes.TestCase}' 
                            AND [{WorkItemFields.State}] <> '{TestCaseState.Closed}'
-                           AND [{WorkItemFields.Tags}] Contains '{Tags.GherkinSyncToolIdTagPrefix + _azureDevopsSettings.GherkinSyncToolId}'"
-            };
+                           AND [System.TeamProject] = '{_azureDevopsSettings.Project}'
+                           AND [{WorkItemFields.Tags}]
+                           Contains '{Tags.GherkinSyncToolIdTagPrefix + _azureDevopsSettings.GherkinSyncToolId}'";
 
-            var workItemIds = workItemTrackingHttpClient.QueryByWiqlAsync(wiql, _azureDevopsSettings.Project).Result;
+            var workItems = GetListOfWorkItemsWithQuery(query);
 
-            return workItemIds.WorkItems.Select(reference => reference.Id);
+            return workItems.Select(reference => reference.Id);
         }
 
         public List<WorkItem> ExecuteWorkItemBatch(List<WitBatchRequest> request)
@@ -156,8 +148,10 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
 
                     if (witBatchResponse.Code != 200)
                     {
-                        Log.Error($"Something went wrong with the test case synchronization. Title: {request[i].GetFields()[WorkItemFields.Title]}");
-                        Log.Error($"Status code: {witBatchResponse.Code}{Environment.NewLine}Body: {witBatchResponse.Body}");
+                        Log.Error(
+                            $"Something went wrong with the test case synchronization. Title: {request[i].GetFields()[WorkItemFields.Title]}");
+                        Log.Error(
+                            $"Status code: {witBatchResponse.Code}{Environment.NewLine}Body: {witBatchResponse.Body}");
 
                         _context.IsRunSuccessful = false;
                         continue;
@@ -204,6 +198,48 @@ namespace GherkinSyncTool.Synchronizers.AzureDevOps.Client
             }
 
             return workItemTrackingHttpClient;
+        }
+
+        private IList<WorkItemReference> GetListOfWorkItemsWithQuery(string query)
+        {
+            var results = new List<WorkItemReference>();
+            var workItemTrackingHttpClient = GetWorkItemTrackingHttpClient();
+            var moreResults = true;
+            var lastIdInList = 0;
+
+            while (moreResults)
+            {
+                var wiql = new Wiql()
+                {
+                    Query = $@"{query}
+                                And [{WorkItemFields.Id}] > {lastIdInList}
+                                ORDER BY [{WorkItemFields.Id}] ASC"
+                };
+
+                //Max number of workItems is 19999, until it gets fixed from the microsoft side
+                var currentResults = workItemTrackingHttpClient
+                    .QueryByWiqlAsync(wiql, _azureDevopsSettings.Project, top: 19999)
+                    .Result.WorkItems.ToList();
+
+                var currentResultsLength = currentResults.Count;
+
+                if (currentResultsLength < 19999)
+                {
+                    moreResults = false;
+                }
+
+                var lastItemInList = currentResults.LastOrDefault();
+
+                if (lastItemInList == null)
+                {
+                    break;
+                }
+
+                lastIdInList = lastItemInList.Id;
+                results.AddRange(currentResults);
+            }
+
+            return results;
         }
     }
 }
