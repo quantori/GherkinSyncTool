@@ -36,6 +36,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
                         $"\r\nOne of the required custom fields is missing: \"{expectedCustomField}\". Please check your TestRail case fields in customization menu\r\n");
                 }
             }
+            Console.WriteLine("OMG");
 
             foreach (var field in CaseFields.Where(f => expectedCustomFields.Contains(f.SystemName)))
             {
@@ -51,7 +52,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
                 if (!projectIds.Contains(_testRailSettings.ProjectId))
                 {
                     throw new ArgumentException(
-                        $"\r\nOne of the required fields: \"{field.SystemName}\" should be global or attached to the project with id: {_testRailSettings.ProjectId}\r\n");
+                        $"\r\nOne of the required fields: \"{field.SystemName}\" should be global or attached to the project with id: {_testRailSettings.ProjectId}. Please open TestRail customization menu and configure field with system name '\"{field.SystemName}\"'\r\n");
                 }
             }
         }
