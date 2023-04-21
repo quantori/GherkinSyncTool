@@ -36,7 +36,6 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
                         $"\r\nOne of the required custom fields is missing: \"{expectedCustomField}\". Please check your TestRail case fields in customization menu\r\n");
                 }
             }
-            Console.WriteLine("OMG");
 
             foreach (var field in CaseFields.Where(f => expectedCustomFields.Contains(f.SystemName)))
             {
