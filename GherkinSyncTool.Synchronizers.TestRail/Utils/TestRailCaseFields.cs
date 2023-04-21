@@ -52,7 +52,7 @@ namespace GherkinSyncTool.Synchronizers.TestRail.Utils
                 if (!projectIds.Contains(_testRailSettings.ProjectId))
                 {
                     throw new ArgumentException(
-                        $"\r\nOne of the required fields: \"{field.SystemName}\" should be global or attached to the project with id: {_testRailSettings.ProjectId}. Please open TestRail customization menu and configure field with system name '\"{field.SystemName}\"'\r\n");
+                        $"\r\nOne of the required fields: \"{field.SystemName}\" should be global or attached to the project with id: {_testRailSettings.ProjectId}. Please open TestRail Customizations menu and configure field with System Name '\"{field.SystemName}\"'\r\n");
                 }
             }
         }
